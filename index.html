@@ -3,483 +3,512 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق الحجز الإلكتروني الذكي</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+    <title>منظومة عيادة الأسنان المتكاملة - ERP سحابي</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <style>
-        :root {
-            --bg: linear-gradient(135deg, #090d16 0%, #05070c 100%);
-            --glass: rgba(13, 20, 35, 0.75);
-            --border: rgba(59, 130, 246, 0.15);
-            --text: #f8fafc;
-            --muted: #94a3b8;
-            --primary: #3b82f6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --error: #ef4444;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 15px; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 430px; }
-        .flat-card {
-            background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--border);
-            border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-bottom: 16px;
-        }
-        .brand-name { font-size: 22px; font-weight: 700; text-align: center; color: #fff; margin-bottom: 2px; }
-        .brand-subtitle { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 15px; }
-        
-        .announcement-bar {
-            width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px dashed var(--error);
-            border-radius: 12px; padding: 8px; margin-bottom: 15px; overflow: hidden; white-space: nowrap; display: none;
-        }
-        .announcement-bar marquee { color: #f43f5e; font-size: 13px; font-weight: 700; }
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-        .user-tabs { display: flex; background: rgba(15,23,42,0.8); padding: 4px; border-radius: 12px; margin-bottom: 16px; }
-        .user-tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 8px; }
-        .user-tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 0 10px rgba(59,130,246,0.3); }
-        .form-group { text-align: right; margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 12px; margin-bottom: 4px; color: #cbd5e1; }
-        .form-control {
-            width: 100%; padding: 11px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px; color: #fff; font-size: 13px; text-align: right; outline: none;
-        }
-        .form-control:focus { border-color: var(--primary); background: rgba(15,23,42,0.9); }
-        
-        .btn-submit {
-            width: 100%; padding: 12px; background: linear-gradient(135deg, var(--success), #059669);
-            color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
-        }
-        .btn-save-cfg {
-            width: 100%; padding: 10px; background: linear-gradient(135deg, var(--primary), #1d4ed8);
-            color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 10px;
-        }
-        
-        .btn-admin-toggle { width: 100%; background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.08); color: var(--muted); padding: 10px; border-radius: 10px; font-size: 12px; cursor: pointer; margin-top: 10px; }
-        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .btn-logout { background: transparent; color: var(--error); border: 1px solid rgba(239,68,68,0.3); padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-        .stat-card { background: rgba(15,23,42,0.6); padding: 10px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.03); }
-        .stat-val { font-size: 18px; font-weight: 700; }
-        .stat-lbl { font-size: 10px; color: var(--muted); }
-        
-        .config-section-title { font-size: 12px; font-weight: 700; color: #60a5fa; margin: 8px 0 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 2px; }
-        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .config-row span { font-size: 11px; color: #cbd5e1; }
-        .input-short { width: 150px; padding: 6px; text-align: right; border: 1px solid rgba(255,255,255,0.1); background: #0f172a; border-radius: 6px; color: #fff; font-size: 11px; outline: none; }
-        
-        .appointment-card {
-            background: rgba(22,30,49,0.7); border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,0.04);
-            display: flex; flex-direction: column; gap: 8px; border-right: 4px solid #64748b; margin-bottom: 10px;
-        }
-        .status-waiting { border-right-color: var(--warning); }
-        .status-confirmed { border-right-color: var(--success); }
-        .status-postponed { border-right-color: var(--primary); }
-        .status-rejected { border-right-color: var(--error); }
-        
-        .priority-badge { background: linear-gradient(135deg, #db2777, #7c3aed); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .queue-badge { background: #1e293b; color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-        .details-grid { background: rgba(15,23,42,0.4); padding: 8px; border-radius: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
-        .card-actions { display: flex; gap: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
-        .btn-action { flex: 1; padding: 7px 2px; border-radius: 6px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; color: white; text-align: center; }
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
-    <div class="app-container">
-        
-        <!-- واجهة الزبائن والمندوبين -->
-        <div id="userBookingScreen" class="flat-card">
-            <div id="companyTickerBar" class="announcement-bar">
-                <marquee id="companyTickerText" behavior="scroll" direction="right" scrollamount="4">جاري تحميل آخر التبليغات...</marquee>
-            </div>
-
-            <div class="brand-name" id="displaySystemName">الحجز الإلكتروني</div>
-            <div class="brand-subtitle" id="displaySystemContact">عنوان الشركة وهاتفها يظهر هنا</div>
-
-            <div class="user-tabs">
-                <button id="userTabCompany" class="user-tab-btn active" onclick="switchUserForm('company')">طلب حجز</button>
-                <button id="userTabNextBookings" class="user-tab-btn" onclick="switchUserForm('next')">لوحة التالي</button>
-                <button id="userTabStatus" class="user-tab-btn" onclick="switchUserForm('status')">استعلام</button>
-            </div>
-
-            <!-- استمارة طلب الحجز الجديد -->
-            <form id="formUserCompany" onsubmit="submitUserCompany(event)">
-                <div class="form-group"><label>اسم الشركة / المذخر</label><input type="text" id="cName" class="form-control" required></div>
-                <div class="form-group"><label>اسم المندوب والهاتف</label><input type="text" id="cDelegate" class="form-control" placeholder="الاسم - 07xxxxxxxx" required></div>
-                <div class="form-group"><label>نسبة خصم المندوب الحالية (%)</label><input type="number" id="cDiscount" class="form-control" placeholder="مثال: 15" min="0" max="100" required></div>
-                <div class="form-group"><label>مبلغ الاستحصال المتوقع</label><input type="text" id="cAmount" class="form-control" oninput="formatCurrency(this)" required></div>
-                <div class="form-group"><label>تاريخ ووقت المراجعة</label><input type="datetime-local" id="cDate" class="form-control" required></div>
-                <button type="submit" class="btn-submit">إرسال طلب الحجز</button>
-            </form>
-
-            <!-- لوحة التالي للحجوزات للعامة والمندوبين -->
-            <div id="divNextBookingsContainer" style="display: none;">
-                <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px; text-align: center;">جدول الحجوزات القادمة والمؤكدة داخل الشركة</div>
-                <div id="nextBookingsList" style="display: flex; flex-direction: column; gap: 8px;"></div>
-            </div>
-
-            <!-- الاستعلام الشخصي عن الطلب -->
-            <div id="divUserStatusSearch" style="display: none;">
-                <div class="form-group"><input type="text" id="searchStatusPhone" class="form-control" placeholder="ابحث باسم الشركة أو رقم الوصل..." oninput="liveCheckStatus()"></div>
-                <div id="statusResultContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
-            </div>
-
-            <button class="btn-admin-toggle" onclick="showScreen('loginScreen')">دخول الإدارة ←</button>
+    <div id="patient-display-screen" class="hidden fixed inset-0 bg-slate-900 text-white z-50 flex flex-col p-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+            <h1 class="text-2xl font-bold text-teal-400 flex items-center gap-2">🦷 شاشة الحجوزات والدور الحالي</h1>
+            <button onclick="closePatientDisplay()" class="bg-slate-800 hover:bg-slate-700 text-xs py-1.5 px-4 rounded-xl transition cursor-pointer">الرجوع للوحة التحكم</button>
         </div>
-
-        <!-- واجهة تسجيل الدخول للمدير -->
-        <div id="loginScreen" class="flat-card" style="display: none;">
-            <div class="brand-name" style="margin-bottom: 15px;">بوابة الإدارة للمدير</div>
-            <form onsubmit="handleLogin(event)">
-                <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="adminEmail" class="form-control" placeholder="Manger.iraq@gmail.com" required style="text-align: left;"></div>
-                <div class="form-group"><label>كلمة المرور</label><input type="password" id="adminPassword" class="form-control" placeholder="••••••••" required style="text-align: left;"></div>
-                <button type="submit" class="btn-submit" style="background: var(--primary);">تسجيل الدخول</button>
-            </form>
-            <button class="btn-admin-toggle" onclick="showScreen('userBookingScreen')">← العودة للرئيسية</button>
-        </div>
-
-        <!-- لوحة تحكم الإدارة المطورة -->
-        <div id="dashboardScreen" style="display: none;">
-            <div class="flat-card" style="padding: 15px; margin-bottom: 12px;">
-                <div class="dash-header">
-                    <div class="brand-name" style="font-size: 16px;" id="dashTitleName">لوحة تحكم المدير</div>
-                    <button class="btn-logout" onclick="showScreen('userBookingScreen')">خروج</button>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card"><div id="totalCount" class="stat-val" style="color:#60a5fa;">0</div><div class="stat-lbl">الإجمالي</div></div>
-                    <div class="stat-card"><div id="pendingCount" class="stat-val" style="color:var(--warning);">0</div><div class="stat-lbl">الانتظار</div></div>
-                    <div class="stat-card"><div id="successCount" class="stat-val" style="color:var(--success);">0</div><div class="stat-lbl">المكتملة</div></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
+            <div class="bg-gradient-to-br from-teal-600 to-teal-900 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl">
+                <span class="text-xs font-bold tracking-widest bg-teal-950/40 text-teal-200 px-4 py-1.5 rounded-full uppercase mb-4">المريض الحالي في غرفة الفحص</span>
+                <h2 id="display-current-name" class="text-4xl font-bold mb-4">لا يوجد مريض في الداخل</h2>
+                <div class="text-xl text-teal-100" id="display-current-status">العيادة جاهزة لاستقبال المريض التالي</div>
+            </div>
+            <div class="bg-slate-950 rounded-3xl p-6 border border-slate-800 flex flex-col">
+                <h3 class="text-lg font-bold text-slate-400 mb-4 flex items-center gap-2">⏱️ الحجوزات القادمة (طابور الانتظار)</h3>
+                <div id="display-queue-list" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-2">
+                    <div class="text-center py-20 text-slate-600 text-sm">طابور الانتظار فارغ حالياً</div>
                 </div>
             </div>
-
-            <!-- إعدادات الشركة -->
-            <div class="flat-card" style="padding: 15px; margin-bottom: 12px;">
-                <div class="config-section-title">🏢 إعدادات الشركة وبيانات الاتصال</div>
-                <div class="config-row"><span>اسم الشركة:</span><input type="text" id="cfgCompanyName" class="input-short"></div>
-                <div class="config-row"><span>رقم هاتف الشركة:</span><input type="text" id="cfgCompanyPhone" class="input-short"></div>
-                <div class="config-row"><span>عنوان الشركة الحالي:</span><input type="text" id="cfgCompanyAddress" class="input-short"></div>
-                
-                <div class="config-section-title">📢 شريط التبليغات والإعلانات النصي</div>
-                <div class="form-group" style="margin-top: 5px;">
-                    <input type="text" id="cfgSliderUrls" class="form-control" style="font-size: 12px;" placeholder="اكتب التبليغ الذي يظهر للمندوبين هنا...">
-                </div>
-
-                <div class="config-section-title">⚙️ القواعد العامة للحجز</div>
-                <div class="config-row"><span>السقف الشهري للحجوزات:</span><input type="number" id="monthlyLimit" class="input-short"></div>
-                <div class="config-row"><span>يوم العطلة الأسبوعية:</span>
-                    <select id="cfgCompanyHoliday" class="input-short">
-                        <option value="">لا يوجد</option>
-                        <option value="6">السبت</option>
-                        <option value="0">الأحد</option>
-                        <option value="1">الإثنين</option>
-                        <option value="2">الثلاثاء</option>
-                        <option value="3">الأربعاء</option>
-                        <option value="4">الخميس</option>
-                        <option value="5">الجمعة</option>
-                    </select>
-                </div>
-                <button type="button" class="btn-save-cfg" onclick="updateConfig()">💾 حفظ إعدادات الشركة</button>
-            </div>
-
-            <div class="form-group"><input type="text" id="adminSearchInput" class="form-control" placeholder="🔍 ابحث بالاسم، الوصل، الخصم أو رتب تلقائياً..." oninput="renderDashboard()"></div>
-            
-            <div style="font-size: 12px; font-weight: 700; color: #db2777; margin-bottom: 8px; padding-right: 4px;">⚠️ الطلبات مرتبة تلقائياً بحسب أولوية (أعلى نسبة خصم للمندوب):</div>
-            <div id="appointmentsList"></div>
         </div>
-
     </div>
 
-    <script>
-        // ==========================================
-        // 🛠️ إعدادات الفايربيس (Firebase Config)
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "ضع_apiKey_هنا",
-            authDomain: "ضع_authDomain_هنا",
-            databaseURL: "ضع_رابط_databaseURL_هنا"
-        };
+    <div id="main-patient-section" class="w-full max-w-lg mx-auto p-4 flex flex-col justify-center gap-6 my-auto">
+        <div class="text-center">
+            <span class="text-4xl block mb-2">🦷</span>
+            <h1 class="text-xl font-bold text-slate-800">عيادة الأسنان التخصصية الحديثة</h1>
+            <p class="text-xs text-slate-400 mt-1">أهلاً بك في نظام الحجز الإلكتروني المباشر</p>
+        </div>
         
-        let db = null;
-        if(firebaseConfig.databaseURL.indexOf("http") === 0) {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-        }
+        <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
+            <div class="mb-4 text-center"><h2 class="text-md font-bold text-teal-700">📝 استمارة تثبيت موعد فوري</h2></div>
+            <form onsubmit="handlePatientBooking(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">اسم المريض الكامل</label>
+                    <input type="text" id="p-name" required placeholder="مثال: علي حسين أحمد" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50/50">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">العمر</label>
+                        <input type="number" id="p-age" required placeholder="25" min="1" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50/50">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">رقم الهاتف</label>
+                        <input type="tel" id="p-phone" required placeholder="077XXXXXXXX" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl text-left focus:outline-none focus:border-teal-500 bg-slate-50/50" dir="ltr">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">وقت الحضور بالتاريخ</label>
+                    <input type="datetime-local" id="p-datetime" required class="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50/50 text-right">
+                </div>
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl text-sm transition cursor-pointer">✨ تثبيت الحجز الإلكتروني فوراً</button>
+            </form>
+        </div>
 
-        let appointments = [], globalMonthlyLimit = 4, companySystemName = "الحجز الإلكتروني";
-        let companyPhone = "", companyAddress = "", companyHoliday = "", sliderUrls = "";
+        <div class="mt-2 text-center">
+            <button onclick="toggleAdminFields()" class="bg-slate-900 hover:bg-slate-950 text-white font-semibold py-2 px-6 rounded-xl text-xs transition shadow-md cursor-pointer inline-flex items-center gap-2">⚙️ تسجيل دخول الإدارة</button>
+            <div id="admin-fields-container" class="hidden mt-3 p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 text-right animate-fadeIn">
+                <form onsubmit="handleDoctorLogin(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">البريد الإلكتروني</label>
+                        <input type="email" id="doc-email" required placeholder="ادخل البريد الإلكتروني للمدير" class="w-full p-2.5 text-xs border border-slate-800 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-950 text-left placeholder-slate-600" dir="ltr">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">كلمة المرور</label>
+                        <input type="password" id="doc-password" required placeholder="••••••••" class="w-full p-2.5 text-xs border border-slate-800 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-950 text-left placeholder-slate-600" dir="ltr">
+                    </div>
+                    <button type="submit" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition cursor-pointer">🔐 تأكيد النفاذ والدخول</button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-        document.addEventListener("DOMContentLoaded", () => {
-            if(db) {
-                db.ref('config_company').on('value', snap => {
-                    const d = snap.val() || {};
-                    globalMonthlyLimit = d.globalMonthlyLimit || 4;
-                    companySystemName = d.companySystemName || "الحجز الإلكتروني";
-                    companyPhone = d.companyPhone || "";
-                    companyAddress = d.companyAddress || "";
-                    companyHoliday = d.companyHoliday !== undefined ? d.companyHoliday : "";
-                    sliderUrls = d.sliderUrls || "";
+    <div id="app-dashboard-section" class="hidden flex-1 flex flex-col w-full animate-fadeIn">
+        <header class="bg-slate-900 text-white p-4 shadow-md flex justify-between items-center shrink-0 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <h1 class="text-md font-bold text-teal-400">لوحة الإدارة الشاملة السحابية (Doctor ERP)</h1>
+                <button onclick="openPatientDisplay()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold py-1 px-3 rounded-lg transition flex items-center gap-1 cursor-pointer">📺 فتح شاشة العرض الخارجي</button>
+            </div>
+            <button onclick="handleLogout()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition cursor-pointer">تسجيل خروج</button>
+        </header>
 
-                    document.getElementById('monthlyLimit').value = globalMonthlyLimit;
-                    document.getElementById('cfgCompanyName').value = companySystemName;
-                    document.getElementById('cfgCompanyPhone').value = companyPhone;
-                    document.getElementById('cfgCompanyAddress').value = companyAddress;
-                    document.getElementById('cfgCompanyHoliday').value = companyHoliday;
-                    document.getElementById('cfgSliderUrls').value = sliderUrls;
+        <div class="p-4 bg-white border-b border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                <span class="text-xs text-slate-400 block">إجمالي الإيرادات</span>
+                <strong id="stat-revenue" class="text-md text-emerald-600">0 د.ع</strong>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                <span class="text-xs text-slate-400 block">إجمالي المصاريف</span>
+                <strong id="stat-expenses" class="text-md text-rose-600">0 د.ع</strong>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                <span class="text-xs text-slate-400 block">صافي أرباح العيادة</span>
+                <strong id="stat-profit" class="text-md text-teal-600">0 د.ع</strong>
+            </div>
+            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                <span class="text-xs text-slate-400 block">حالة مخزن المواد</span>
+                <strong id="stat-inventory" class="text-xs text-amber-600">مستقر (جاري المزامنة)</strong>
+            </div>
+        </div>
 
-                    document.getElementById('displaySystemName').innerText = companySystemName;
-                    document.getElementById('displaySystemContact').innerText = `📍 ${companyAddress || 'العنوان غير محدد'} | 📞 ${companyPhone || 'الهاتف غير محدد'}`;
-                    document.getElementById('dashTitleName').innerText = companySystemName;
-                    
-                    setupTicker(sliderUrls);
-                });
+        <main class="p-4 max-w-full mx-auto w-full grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1 items-start">
+            <div class="space-y-6 xl:col-span-1">
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2 border-slate-100 flex justify-between items-center">
+                        <span>👥 طابور الانتظار السحابي</span>
+                        <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md" id="queue-count">0 حجز</span>
+                    </h2>
+                    <div class="max-h-64 overflow-y-auto space-y-2" id="queue-list">
+                        <div id="empty-queue-msg" class="text-center py-8 text-xs text-slate-400">لا توجد حجوزات حية حالياً.</div>
+                    </div>
+                </div>
 
-                db.ref('appointments_company').on('value', snap => {
-                    appointments = [];
-                    const data = snap.val();
-                    for(let k in data) appointments.push({ fKey: k, ...data[k] });
-                    renderDashboard(); 
-                    liveCheckStatus();
-                    renderNextBookings();
-                });
-            }
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-800 mb-2">⚙️ إدارة حسابات السكرتارية</h2>
+                    <form onsubmit="addSecretaryAccount(event)" class="space-y-2">
+                        <input type="text" id="sec-username" required placeholder="اسم مستخدم السكرتير" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
+                        <input type="password" id="sec-password" required placeholder="رمز المرور" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
+                        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer">إضافة حساب سحابي</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="xl:col-span-2 space-y-6">
+                <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex justify-between items-center bg-gradient-to-r from-slate-900 to-teal-950">
+                    <div>
+                        <span class="text-[10px] bg-teal-500/20 text-teal-300 font-bold px-2.5 py-0.5 rounded-full tracking-wider">المريض الحالي داخل العيادة</span>
+                        <h3 class="text-md font-bold mt-1" id="active-name">لا يوجد مريض قيد الفحص</h3>
+                        <p class="text-xs text-slate-400 mt-1">العمر: <span id="active-age">--</span> | الهاتف: <span id="active-phone">--</span></p>
+                    </div>
+                    <button onclick="callNextPatient()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs transition shadow-sm cursor-pointer">🔔 استدعاء الحجز التالي</button>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2">📋 السجل الصحي والتاريخ المرضي للحالة</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">أمراض مزمنة / حساسية</label>
+                            <input type="text" id="med-history" onchange="saveEHRData()" placeholder="سكري، حساسية بنسيلين" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">ملاحظات التشخيص العام</label>
+                            <input type="text" id="med-notes" onchange="saveEHRData()" placeholder="تسوس حاد في الطواحن" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-teal-700 mb-3">أطلس مخطط الأسنان للمعاينة والتشخيص المباشر</h2>
+                    <div class="mb-4">
+                        <h4 class="text-center text-[9px] font-bold text-slate-400 mb-1">الفك العلوي</h4>
+                        <div class="flex justify-center flex-wrap gap-1" id="upper-jaw"></div>
+                    </div>
+                    <hr class="border-dashed border-slate-200 my-3">
+                    <div>
+                        <h4 class="text-center text-[9px] font-bold text-slate-400 mb-1">الفك السفلي</h4>
+                        <div class="flex justify-center flex-wrap gap-1" id="lower-jaw"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2">💊 محرّر الوصفة الطبية الإلكترونية</h2>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="text" id="rx-drug" placeholder="اسم الدواء" class="col-span-2 p-2 text-xs border border-slate-200 rounded-xl">
+                            <input type="text" id="rx-dose" placeholder="الجرعة" class="p-2 text-xs border border-slate-200 rounded-xl">
+                        </div>
+                        <button onclick="addDrugToPrescription()" class="bg-teal-600 text-white text-xs font-bold py-1.5 px-4 rounded-xl transition cursor-pointer">+ إضافة دواء للوصفة</button>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1" id="rx-preview-list">
+                            <div class="text-slate-400 text-center py-2">الوصفة فارغة حالياً</div>
+                        </div>
+                        <button onclick="printPrescription()" class="w-full bg-slate-900 text-white text-xs font-bold py-2 rounded-xl transition cursor-pointer">🖨️ إصدار وطباعة الوصفة الإلكترونية</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-1 space-y-6">
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-emerald-700 mb-3 border-b pb-2 border-slate-100">💰 الفاتورة الحالية وكشف الحساب</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5">تكلفة الإجراء الكلية (د.ع)</label>
+                            <input type="number" id="bill-total" placeholder="0" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5">المبلغ المدفوع فوراً (د.ع)</label>
+                            <input type="number" id="bill-paid" placeholder="0" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
+                        </div>
+                        <button onclick="saveInvoice()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer">💾 ترحيل الفاتورة للحسابات</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-rose-700 mb-2">💸 تسجيل مصاريف عامة</h2>
+                    <div class="space-y-2">
+                        <input type="text" id="exp-title" placeholder="سبب الصرف" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
+                        <input type="number" id="exp-amount" placeholder="المبلغ الصافي" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
+                        <button onclick="saveExpense()" class="w-full bg-rose-500 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer">📉 قيد مصروف جديد</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
+                    <h2 class="text-xs font-bold text-slate-800 mb-2">📦 مراقبة مخزن المواد الطبية</h2>
+                    <div class="space-y-2 text-xs" id="inventory-list-container"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="booking-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-xl text-center border border-slate-100">
+            <span class="text-3xl block mb-2">✅</span>
+            <h3 class="text-sm font-bold text-slate-800">تم تثبيت حجزك الإلكتروني</h3>
+            <p class="text-xs text-slate-500 mt-1">يرجى الانتظار لمتابعة اسمك عبر شاشة العرض الخارجية.</p>
+            <button onclick="closeBookingModal()" class="w-full mt-4 bg-teal-600 text-white text-xs font-bold py-2 rounded-xl transition cursor-pointer">موافق</button>
+        </div>
+    </div>
+
+    <footer class="w-full text-center py-3 bg-slate-100 border-t border-slate-200 text-[11px] text-slate-400 shrink-0">
+        © 2026 جميع الحقوق محفوظة للنظام الذكي لإدارة العيادات (ERP Dental Clinic)
+    </footer>
+
+    <script>
+        // تكوين الـ Firebase الخاص بمشروعك (المحجون حياً ومباشراً)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDAyqdSGBo8yHhwdV1UY_fyWY3g6bsxi-k",
+            authDomain: "dental-clinic-system-79954.firebaseapp.com",
+            projectId: "dental-clinic-system-79954",
+            storageBucket: "dental-clinic-system-79954.firebasestorage.app",
+            messagingSenderId: "641991893560",
+            appId: "1:641991893560:web:c2f5ce30c29c96dfb3bccd",
+            measurementId: "G-Y24Z3BTF93",
+            databaseURL: "https://dental-clinic-system-79954-default-rtdb.firebaseio.com/"
+        };
+
+        // تهيئة اتصال السيرفر بقاعدة البيانات
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        const ADMIN_EMAIL = "Manger.iraq@gmail.com";
+        let globalBookingQueue = [];
+        let activePatient = null;
+        let currentPrescriptionDrugs = [];
+
+        // الاستماع الفوري والمباشر للحجوزات من السيرفر السحابي
+        db.ref('bookings').on('value', (snapshot) => {
+            globalBookingQueue = [];
+            snapshot.forEach((childSnapshot) => {
+                let data = childSnapshot.val();
+                data.id = childSnapshot.key;
+                globalBookingQueue.push(data);
+            });
+            updateDashboardQueueVisuals();
+            updatePatientDisplayVisuals();
         });
 
-        // دالة مساعدة لاستخراج التاريخ فقط (Y-m-d) من النص لمقارنة أيام الحجز
-        function getDateString(dateTimeStr) {
-            if(!dateTimeStr) return "";
-            return dateTimeStr.split(" ")[0];
-        }
+        // الاستماع الفوري للحالة النشطة داخل الفحص
+        db.ref('activePatient').on('value', (snapshot) => {
+            activePatient = snapshot.val();
+            updateActivePatientUI();
+            updatePatientDisplayVisuals();
+        });
 
-        // دالة لحساب تسلسل الدور بناءً على وقت الطلب الفعلي للمقبولين والمؤجلين في نفس اليوم
-        function getQueueNumber(currentAppoint) {
-            if (currentAppoint.status !== 'confirmed' && currentAppoint.status !== 'postponed') return null;
-            
-            const targetDate = getDateString(currentAppoint.date);
-            
-            // تصفية كافة الحجوزات المقبولة أو المؤجلة في نفس اليوم
-            let sameDayApps = appointments.filter(a => 
-                getDateString(a.date) === targetDate && 
-                (a.status === 'confirmed' || a.status === 'postponed')
-            );
-            
-            // ترتيبهم تصاعدياً حسب المعرف (وقت الإرسال الفعلي للطلب) لتحديد من جاء أولاً
-            sameDayApps.sort((a, b) => (a.id || 0) - (b.id || 0));
-            
-            // إيجاد الترتيب (الدور)
-            const index = sameDayApps.findIndex(a => a.fKey === currentAppoint.fKey);
-            return index !== -1 ? index + 1 : null;
-        }
+        // الاستماع الفوري للحسابات المالية والمخزن
+        db.ref('financials').on('value', (snapshot) => {
+            const data = snapshot.val() || { revenue: 0, expenses: 0 };
+            document.getElementById('stat-revenue').innerText = `${(data.revenue || 0).toLocaleString()} د.ع`;
+            document.getElementById('stat-expenses').innerText = `${(data.expenses || 0).toLocaleString()} د.ع`;
+            document.getElementById('stat-profit').innerText = `${((data.revenue || 0) - (data.expenses || 0)).toLocaleString()} د.ع`;
+        });
 
-        function updateConfig() {
-            globalMonthlyLimit = parseInt(document.getElementById('monthlyLimit').value) || 4;
-            companySystemName = document.getElementById('cfgCompanyName').value.trim() || "الحجز الإلكتروني";
-            companyPhone = document.getElementById('cfgCompanyPhone').value.trim();
-            companyAddress = document.getElementById('cfgCompanyAddress').value.trim();
-            companyHoliday = document.getElementById('cfgCompanyHoliday').value;
-            sliderUrls = document.getElementById('cfgSliderUrls').value.trim();
+        db.ref('inventory').on('value', (snapshot) => {
+            const data = snapshot.val() || {
+                "أمبولات البنج الموضعي": { qty: 120, min: 30 },
+                "مادة الحشوات الضوئية": { qty: 15, min: 5 },
+                "قفازات معقمة (صندوق)": { qty: 4, min: 5 }
+            };
+            updateInventoryUI(data);
+        });
 
-            if(db) {
-                db.ref('config_company').set({ 
-                    globalMonthlyLimit, companySystemName, companyPhone, companyAddress, companyHoliday, sliderUrls 
-                }).then(() => {
-                    alert('✅ تم حفظ إعدادات الشركة وتحديث البيانات بنجاح!');
-                }).catch((err) => {
-                    alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
-                });
-            } else {
-                alert('الفايربيس غير متصل حالياً!');
-            }
-        }
+        function toggleAdminFields() { document.getElementById('admin-fields-container').classList.toggle('hidden'); }
+        function openPatientDisplay() { document.getElementById('patient-display-screen').classList.remove('hidden'); updatePatientDisplayVisuals(); }
+        function closePatientDisplay() { document.getElementById('patient-display-screen').classList.add('hidden'); }
 
-        function setupTicker(text) {
-            const bar = document.getElementById('companyTickerBar');
-            const tickerText = document.getElementById('companyTickerText');
-            if(!text || text.trim() === "") {
-                bar.style.display = 'none';
-            } else {
-                bar.style.display = 'block';
-                tickerText.innerText = text;
-            }
-        }
-
-        function formatCurrency(i) {
-            let v = i.value.replace(/[^\d]/g, '');
-            i.value = v ? Number(v).toLocaleString('en-US').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) + " د.ع" : '';
-        }
-
-        function switchUserForm(type) {
-            document.getElementById('userTabCompany').classList.toggle('active', type==='company');
-            document.getElementById('userTabStatus').classList.toggle('active', type==='status');
-            document.getElementById('userTabNextBookings').classList.toggle('active', type==='next');
-            
-            document.getElementById('formUserCompany').style.display = type==='company'?'block':'none';
-            document.getElementById('divUserStatusSearch').style.display = type==='status'?'block':'none';
-            document.getElementById('divNextBookingsContainer').style.display = type==='next'?'block':'none';
-        }
-
-        function showScreen(id) {
-            document.getElementById('userBookingScreen').style.display = id==='userBookingScreen'?'block':'none';
-            document.getElementById('loginScreen').style.display = id==='loginScreen'?'block':'none';
-            document.getElementById('dashboardScreen').style.display = id==='dashboardScreen'?'block':'none';
-        }
-
-        function handleLogin(e) {
+        function handleDoctorLogin(e) {
             e.preventDefault();
-            if(document.getElementById('adminEmail').value.trim().toLowerCase()==='manger.iraq@gmail.com' && document.getElementById('adminPassword').value==='19001800') {
-                showScreen('dashboardScreen');
-            } else { alert('بيانات المدير غير صحيحة!'); }
+            const emailInput = document.getElementById('doc-email').value.trim();
+            const passwordInput = document.getElementById('doc-password').value;
+
+            if (emailInput === ADMIN_EMAIL && passwordInput === "19001800") {
+                document.getElementById('main-patient-section').classList.add('hidden');
+                document.getElementById('app-dashboard-section').classList.remove('hidden');
+                initDentalChart();
+            } else {
+                alert("بيانات الدخول غير صحيحة! يرجى إعادة التحقق.");
+            }
         }
 
-        function submitUserCompany(e) {
+        // دفع حجز جديد إلى السيرفر السحابي
+        function handlePatientBooking(e) {
             e.preventDefault();
-            const name = document.getElementById('cName').value.trim(), del = document.getElementById('cDelegate').value.trim();
-            const disc = parseInt(document.getElementById('cDiscount').value) || 0;
-            const am = document.getElementById('cAmount').value.trim(), dt = document.getElementById('cDate').value.replace('T',' ');
+            const name = document.getElementById('p-name').value;
+            const age = document.getElementById('p-age').value;
+            const phone = document.getElementById('p-phone').value;
+            const datetime = document.getElementById('p-datetime').value;
 
-            if(companyHoliday !== "" && new Date(dt).getDay() === parseInt(companyHoliday)) { 
-                alert('اليوم المختار يصادف عطلة الشركة الرسمية المحددة في النظام!'); 
-                return; 
-            }
-            if(appointments.filter(a=>a.companyName.toLowerCase()===name.toLowerCase()).length >= globalMonthlyLimit) { 
-                alert('تجاوزت هذه الشركة الحد الشهري المسموح به للحجوزات!'); 
-                return; 
-            }
+            const formattedDateTime = new Date(datetime).toLocaleString('ar-IQ', {
+                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
+            });
 
-            const rec = "REC-" + (1000 + (appointments.length + 1));
-            const newB = { id: Date.now(), receiptNo: rec, companyName: name, delegateName: del, discount: disc, amount: am, date: dt, status: "waiting" };
+            const queueNum = String(globalBookingQueue.length + 1).padStart(3, '0');
 
-            if(db) db.ref('appointments_company').push(newB);
-            window.open(`https://wa.me/?text=*طلب حجز موعد جديد*%0A• *الوصل:* ${rec}%0A• *الشركة:* ${name}%0A• *خصم المندوب:* ${disc}%%0A• *الموعد:* ${dt}`, '_blank');
-            alert(`تم إرسال حجزك بنجاح برقم وصل: ${rec}`);
-            document.getElementById('formUserCompany').reset();
+            db.ref('bookings').push({
+                name: name, age: age, phone: phone, datetime: formattedDateTime, queueNum: queueNum
+            });
+
+            document.getElementById('booking-success-modal').classList.remove('hidden');
+            e.target.reset();
         }
 
-        // عرض لوحة الحجوزات القادمة مع إضافة رقم التسلسل للزبائن
-        function renderNextBookings() {
-            const container = document.getElementById('nextBookingsList');
-            if(!container) return;
-            container.innerHTML = '';
-            
-            let nextAppoints = appointments.filter(a => a.status === 'confirmed' || a.status === 'postponed');
-            
-            if(nextAppoints.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:15px;">لا توجد حجوزات تالية مؤكدة حالياً.</div>`;
+        function updateDashboardQueueVisuals() {
+            const container = document.getElementById('queue-list');
+            const msg = document.getElementById('empty-queue-msg');
+            document.getElementById('queue-count').innerText = `${globalBookingQueue.length} حجز`;
+
+            container.querySelectorAll('.booking-row').forEach(el => el.remove());
+            if (globalBookingQueue.length === 0) { msg.classList.remove('hidden'); return; }
+            msg.classList.add('hidden');
+
+            globalBookingQueue.forEach(b => {
+                const row = document.createElement('div');
+                row.className = "booking-row flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs";
+                row.innerHTML = `<div class="text-right"><span class="font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded mr-1">${b.queueNum}</span><strong class="text-slate-700">${b.name}</strong></div>`;
+                container.appendChild(row);
+            });
+        }
+
+        function updatePatientDisplayVisuals() {
+            const currentNameEl = document.getElementById('display-current-name');
+            const currentStatusEl = document.getElementById('display-current-status');
+            const listContainer = document.getElementById('display-queue-list');
+
+            if (activePatient) {
+                currentNameEl.innerText = activePatient.name;
+                currentStatusEl.innerText = `رقم الدور الحالي: ${activePatient.queueNum}`;
+            } else {
+                currentNameEl.innerText = "لا يوجد مريض بالداخل";
+                currentStatusEl.innerText = "العيادة جاهزة لاستقبال المريض التالي";
+            }
+
+            listContainer.innerHTML = '';
+            if (globalBookingQueue.length === 0) {
+                listContainer.innerHTML = '<div class="text-center py-20 text-slate-600 text-sm">طابور الانتظار فارغ حالياً</div>';
                 return;
             }
 
-            // ترتيب العرض حسب التاريخ والوقت تصاعدياً
-            nextAppoints.sort((a,b) => new Date(a.date) - new Date(b.date));
-
-            nextAppoints.forEach(a => {
-                const qNum = getQueueNumber(a);
-                container.innerHTML += `
-                    <div style="background: rgba(16, 185, 129, 0.08); border-right: 4px solid var(--success); padding: 10px; border-radius: 10px; font-size: 12px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-                            <b>🏢 ${a.companyName}</b>
-                            <span class="queue-badge">تسلسل الحجز: ${qNum}</span>
-                        </div>
-                        <div style="color:#60a5fa; margin-top:2px;">🗓️ الموعد المؤكد: ${a.date}</div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px;">
-                            <span>المندوب: ${a.delegateName}</span>
-                            <span>الوصل: ${a.receiptNo}</span>
-                        </div>
-                    </div>`;
+            globalBookingQueue.forEach((b, index) => {
+                const badgeClass = index === 0 ? 'bg-amber-500 text-slate-950 font-bold animate-pulse' : 'bg-slate-800 text-slate-300';
+                const prefixText = index === 0 ? 'التالي مباشرة' : `انتظار (${index + 1})`;
+                item = document.createElement('div');
+                item.className = "flex justify-between items-center p-4 bg-slate-900 rounded-2xl border border-slate-800";
+                item.innerHTML = `<div class="flex items-center gap-3"><span class="text-sm font-bold text-teal-400 bg-teal-950 px-2.5 py-1 rounded-xl">${b.queueNum}</span><h4 class="text-md font-semibold">${b.name}</h4></div><span class="text-xs px-3 py-1 rounded-lg ${badgeClass}">${prefixText}</span>`;
+                listContainer.appendChild(item);
             });
         }
 
-        // الاستعلام الشخصي يظهر حالة وتوجيه التسلسل للزبون مباشرة
-        function liveCheckStatus() {
-            const q = document.getElementById('searchStatusPhone').value.trim().toLowerCase(), res = document.getElementById('statusResultContainer');
-            if(!res) return; res.innerHTML = ''; if(!q) return;
-            appointments.filter(a => a.companyName.toLowerCase().includes(q) || a.receiptNo.toLowerCase().includes(q)).forEach(a => {
-                const qNum = getQueueNumber(a);
-                const qMsg = qNum ? `<br><span style="color:var(--success); font-weight:bold;">🔢 تسلسل دورك في هذا اليوم هو: (${qNum})</span>` : '';
-                
-                res.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; font-size:12px;">
-                    <b>${a.companyName} (${a.receiptNo})</b><br><span>الخصم: ${a.discount || 0}%</span> | <span style="color:#60a5fa;">الموعد: ${a.date}</span>${qMsg}<br>الحالة: ${a.status==='waiting'?'قيد الانتظار 🟠':a.status==='confirmed'?'مقبول 🟢':a.status==='rejected'?'مرفوض 🔴':'مؤجل 🔵'}
-                </div>`;
-            });
+        function callNextPatient() {
+            if (globalBookingQueue.length === 0) { alert("طابور الحجوزات السحابي فارغ."); return; }
+            const nextPatient = globalBookingQueue[0];
+
+            // إزالة المريض من الطابور السحابي وتعيينه كمريض نشط حالي
+            db.ref('bookings/' + nextPatient.id).remove();
+            db.ref('activePatient').set(nextPatient);
+
+            // تصفير حقول الفحص القديمة تلقائياً للمريض الجديد
+            db.ref('activeToothChart').remove();
+            document.getElementById('med-history').value = '';
+            document.getElementById('med-notes').value = '';
+            document.getElementById('bill-total').value = '';
+            document.getElementById('bill-paid').value = '';
+            currentPrescriptionDrugs = [];
+            updateRxPreviewList();
         }
 
-        // لوحة تحكم المدير تظهر التسلسل بجانب نسبة الخصم
-        function renderDashboard() {
-            document.getElementById('totalCount').innerText = appointments.length;
-            document.getElementById('pendingCount').innerText = appointments.filter(a=>a.status==='waiting').length;
-            document.getElementById('successCount').innerText = appointments.filter(a=>a.status==='confirmed').length;
-
-            const list = document.getElementById('appointmentsList'), q = document.getElementById('adminSearchInput').value.toLowerCase();
-            if(!list) return; list.innerHTML = '';
-
-            let sortedAppointments = [...appointments].sort((a, b) => (b.discount || 0) - (a.discount || 0));
-
-            sortedAppointments.filter(a => !q || a.companyName.toLowerCase().includes(q) || a.receiptNo.toLowerCase().includes(q)).forEach(a => {
-                const qNum = getQueueNumber(a);
-                const displayQueue = qNum ? `<span class="queue-badge" style="margin-left:5px;">دور: ${qNum}</span>` : '';
-
-                list.innerHTML += `
-                    <div class="appointment-card status-${a.status}">
-                        <div class="card-row" style="display:flex; justify-content:space-between; align-items:center;">
-                            <span><b>${a.companyName}</b> (${a.receiptNo})</span>
-                            <div style="display:flex; gap:5px; align-items:center;">
-                                ${displayQueue}
-                                <span class="priority-badge">خصم: ${a.discount || 0}%</span>
-                            </div>
-                        </div>
-                        <div class="details-grid">
-                            <span>المندوب: ${a.delegateName}</span>
-                            <span>المبلغ المتوقع: ${a.amount}</span>
-                            <span>التاريخ المطلوب: ${a.date}</span>
-                            ${a.rejectReason ? `<span style="color:var(--error)">السبب: ${a.rejectReason}</span>` : ''}
-                        </div>
-                        <div class="card-actions">
-                            <button class="btn-action" style="background:var(--success)" onclick="updateStatus('${a.fKey}', 'confirmed', 'تم قبول وتأكيد حجزكم بنجاح!')">قبول</button>
-                            <button class="btn-action" style="background:var(--primary)" onclick="postponeAction('${a.fKey}')">تأجيل</button>
-                            <button class="btn-action" style="background:var(--error)" onclick="rejectAction('${a.fKey}')">رفض</button>
-                            <button class="btn-action" style="background:#475569" onclick="deleteAction('${a.fKey}')">حذف</button>
-                        </div>
-                    </div>`;
-            });
+        function updateActivePatientUI() {
+            if (activePatient) {
+                document.getElementById('active-name').innerText = activePatient.name;
+                document.getElementById('active-age').innerText = activePatient.age;
+                document.getElementById('active-phone').innerText = activePatient.phone;
+            } else {
+                document.getElementById('active-name').innerText = "لا يوجد مريض قيد الفحص";
+                document.getElementById('active-age').innerText = "--";
+                document.getElementById('active-phone').innerText = "--";
+            }
         }
 
-        function updateStatus(key, stat, text) {
-            if(db) {
-                db.ref('appointments_company/' + key).update({ status: stat }).then(() => {
-                    // بعد التحديث نقوم بجلب البيانات وحساب التسلسل لإرساله عبر الواتساب
-                    db.ref('appointments_company/' + key).once('value', snap => {
-                        const updatedAppoint = { fKey: key, ...snap.val() };
-                        const qNum = getQueueNumber(updatedAppoint);
-                        const queueTxt = qNum ? `%0A🔢 تسلسل دوركم في الحجز: ${qNum}` : '';
-                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}${queueTxt}`, '_blank');
-                    });
+        function saveEHRData() {
+            if(!activePatient) return;
+            const history = document.getElementById('med-history').value;
+            const notes = document.getElementById('med-notes').value;
+            db.ref('patients_ehr/' + activePatient.phone).set({ history, notes });
+        }
+
+        function addDrugToPrescription() {
+            const drug = document.getElementById('rx-drug').value.trim();
+            const dose = document.getElementById('rx-dose').value.trim();
+            if (!drug) return;
+            currentPrescriptionDrugs.push({ drug, dose });
+            document.getElementById('rx-drug').value = '';
+            document.getElementById('rx-dose').value = '';
+            updateRxPreviewList();
+        }
+
+        function updateRxPreviewList() {
+            const container = document.getElementById('rx-preview-list');
+            container.innerHTML = '';
+            if (currentPrescriptionDrugs.length === 0) { container.innerHTML = '<div class="text-slate-400 text-center py-2">الوصفة فارغة حالياً</div>'; return; }
+            currentPrescriptionDrugs.forEach((d, i) => { container.innerHTML += `<div class="flex justify-between border-b border-slate-100 pb-1"><span>${i+1}. <b>${d.drug}</b> - ${d.dose}</span></div>`; });
+        }
+
+        function printPrescription() {
+            if (!activePatient) { alert("يجب استدعاء مريض أولاً."); return; }
+            if (currentPrescriptionDrugs.length === 0) { alert("الوصفة فارغة."); return; }
+            alert(`📝 تم تصدير وطباعة الوصفة الإلكترونية للمريض: ${activePatient.name}`);
+        }
+
+        function saveInvoice() {
+            if (!activePatient) { alert("يجب استدعاء مريض أولاً."); return; }
+            const paid = parseFloat(document.getElementById('bill-paid').value) || 0;
+            db.ref('financials/revenue').transaction(current => (current || 0) + paid);
+            alert("💸 تم ترحيل الفاتورة للحسابات السحابية بنجاح.");
+        }
+
+        function saveExpense() {
+            const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+            if (amount <= 0) return;
+            db.ref('financials/expenses').transaction(current => (current || 0) + amount);
+            document.getElementById('exp-title').value = '';
+            document.getElementById('exp-amount').value = '';
+            alert("📉 تم تسجيل قيد المصروف السحابي بنجاح.");
+        }
+
+        function updateInventoryUI(data) {
+            const container = document.getElementById('inventory-list-container');
+            container.innerHTML = '';
+            let hasShortage = false;
+
+            for (const [name, d] of Object.entries(data)) {
+                const isShort = d.qty <= d.min;
+                if (isShort) hasShortage = true;
+                const badge = isShort ? '<span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-bold">⚠️ نقص</span>' : '<span class="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">كافي</span>';
+                container.innerHTML += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100"><span>${name} (<b>${d.qty}</b>)</span>${badge}</div>`;
+            }
+            document.getElementById('stat-inventory').innerText = hasShortage ? "⚠️ نقص في بعض المواد" : "مستقر (خالٍ من النقص)";
+        }
+
+        function initDentalChart() {
+            const upper = document.getElementById('upper-jaw'); const lower = document.getElementById('lower-jaw');
+            upper.innerHTML = ''; lower.innerHTML = '';
+            for (let i = 1; i <= 16; i++) upper.appendChild(createToothIcon(i, 'rounded-t-md'));
+            for (let i = 17; i <= 32; i++) lower.appendChild(createToothIcon(i, 'rounded-b-md'));
+            
+            db.ref('activeToothChart').on('value', snapshot => {
+                const damagedTeeth = snapshot.val() || {};
+                Object.keys(damagedTeeth).forEach(num => {
+                    const tBtn = document.getElementById(`tooth-${num}`);
+                    if(tBtn) tBtn.className = tBtn.className.replace('border-emerald-400 bg-emerald-50/60 text-emerald-800', 'border-red-500 bg-red-50 text-red-700');
                 });
-            }
+            });
         }
 
-        function postponeAction(key) {
-            const newD = prompt("أدخل الموعد البديل للتأجيل (مثال: 2026-06-25 11:00):");
-            if(newD && db) {
-                db.ref('appointments_company/' + key).update({ date: newD, status: 'postponed' }).then(() => {
-                    db.ref('appointments_company/' + key).once('value', snap => {
-                        const updatedAppoint = { fKey: key, ...snap.val() };
-                        const qNum = getQueueNumber(updatedAppoint);
-                        const queueTxt = qNum ? `%0A🔢 تسلسل دوركم الجديد: ${qNum}` : '';
-                        window.open(`https://wa.me/?text=${encodeURIComponent('إشعار: تم تأجيل طلب حجزكم إلى موعد جديد وهو: ' + newD)}${queueTxt}`, '_blank');
-                    });
-                });
-            }
+        function createToothIcon(num, radius) {
+            const btn = document.createElement('button');
+            btn.id = `tooth-${num}`;
+            btn.className = `w-6 h-8 border border-emerald-400 bg-emerald-50/60 ${radius} text-[9px] font-bold text-emerald-800 flex items-center justify-center cursor-pointer hover:bg-emerald-100 transition`;
+            btn.innerText = num;
+            btn.onclick = () => {
+                if(!activePatient) { alert("يرجى استدعاء حجز أولاً."); return; }
+                db.ref('activeToothChart/' + num).set(true);
+            };
+            return btn;
         }
 
-        function rejectAction(key) {
-            const reason = prompt("ما هو سبب رفض الحجز؟");
-            if(reason && db) {
-                db.ref('appointments_company/' + key).update({ status: 'rejected', rejectReason: reason });
-                window.open(`https://wa.me/?text=${encodeURIComponent('إشعار: تم رفض طلب الحجز بسبب: ' + reason)}`, '_blank');
-            }
+        function addSecretaryAccount(e) {
+            e.preventDefault();
+            const user = document.getElementById('sec-username').value.trim();
+            const pass = document.getElementById('sec-password').value;
+            db.ref('secretaries/' + user).set(pass);
+            alert(`تم إنشاء حساب السكرتير سحابياً بنجاح: ${user}`);
+            e.target.reset();
         }
 
-        function deleteAction(key) { if(confirm("هل تريد حذف هذا الحجز تماماً من النظام؟") && db) db.ref('appointments_company/' + key).remove(); }
+        function closeBookingModal() { document.getElementById('booking-success-modal').classList.add('hidden'); }
+        function handleLogout() { location.reload(); }
     </script>
 </body>
 </html>
