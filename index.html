@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الحجز الإلكتروني الذكي</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg: linear-gradient(135deg, #090d16 0%, #05070c 100%);
+            --glass: rgba(13, 20, 35, 0.75);
+            --border: rgba(59, 130, 246, 0.15);
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 15px; display: flex; justify-content: center; }
+        .app-container { width: 100%; max-width: 430px; }
+        .flat-card {
+            background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--border);
+            border-radius: 24px; padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-bottom: 16px;
+        }
+        .brand-name { font-size: 22px; font-weight: 700; text-align: center; color: #fff; margin-bottom: 2px; }
+        .brand-subtitle { font-size: 12px; color: var(--muted); text-align: center; margin-bottom: 15px; }
+        
+        .announcement-bar {
+            width: 100%; background: rgba(239, 68, 68, 0.15); border: 1px dashed var(--error);
+            border-radius: 12px; padding: 8px; margin-bottom: 15px; overflow: hidden; white-space: nowrap; display: none;
+        }
+        .announcement-bar marquee { color: #f43f5e; font-size: 13px; font-weight: 700; }
+
+        .user-tabs { display: flex; background: rgba(15,23,42,0.8); padding: 4px; border-radius: 12px; margin-bottom: 16px; }
+        .user-tab-btn { flex: 1; background: none; border: none; padding: 10px; font-size: 13px; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 8px; }
+        .user-tab-btn.active { background: var(--primary); color: #fff; box-shadow: 0 0 10px rgba(59,130,246,0.3); }
+        .form-group { text-align: right; margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 4px; color: #cbd5e1; }
+        .form-control {
+            width: 100%; padding: 11px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; color: #fff; font-size: 13px; text-align: right; outline: none;
+        }
+        .form-control:focus { border-color: var(--primary); background: rgba(15,23,42,0.9); }
+        
+        .btn-submit {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, var(--success), #059669);
+            color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer;
+        }
+        .btn-save-cfg {
+            width: 100%; padding: 10px; background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 10px;
+        }
+        
+        .btn-admin-toggle { width: 100%; background: rgba(30,41,59,0.4); border: 1px solid rgba(255,255,255,0.08); color: var(--muted); padding: 10px; border-radius: 10px; font-size: 12px; cursor: pointer; margin-top: 10px; }
+        .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .btn-logout { background: transparent; color: var(--error); border: 1px solid rgba(239,68,68,0.3); padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+        .stat-card { background: rgba(15,23,42,0.6); padding: 10px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.03); }
+        .stat-val { font-size: 18px; font-weight: 700; }
+        .stat-lbl { font-size: 10px; color: var(--muted); }
+        
+        .config-section-title { font-size: 12px; font-weight: 700; color: #60a5fa; margin: 8px 0 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 2px; }
+        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .config-row span { font-size: 11px; color: #cbd5e1; }
+        .input-short { width: 150px; padding: 6px; text-align: right; border: 1px solid rgba(255,255,255,0.1); background: #0f172a; border-radius: 6px; color: #fff; font-size: 11px; outline: none; }
+        
+        .appointment-card {
+            background: rgba(22,30,49,0.7); border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,0.04);
+            display: flex; flex-direction: column; gap: 8px; border-right: 4px solid #64748b; margin-bottom: 10px;
+        }
+        .status-waiting { border-right-color: var(--warning); }
+        .status-confirmed { border-right-color: var(--success); }
+        .status-postponed { border-right-color: var(--primary); }
+        .status-rejected { border-right-color: var(--error); }
+        
+        .priority-badge { background: linear-gradient(135deg, #db2777, #7c3aed); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .queue-badge { background: #1e293b; color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .details-grid { background: rgba(15,23,42,0.4); padding: 8px; border-radius: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+        .card-actions { display: flex; gap: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
+        .btn-action { flex: 1; padding: 7px 2px; border-radius: 6px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; color: white; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- واجهة الزبائن والمندوبين -->
+        <div id="userBookingScreen" class="flat-card">
+            <div id="companyTickerBar" class="announcement-bar">
+                <marquee id="companyTickerText" behavior="scroll" direction="right" scrollamount="4">جاري تحميل آخر التبليغات...</marquee>
+            </div>
+
+            <div class="brand-name" id="displaySystemName">الحجز الإلكتروني</div>
+            <div class="brand-subtitle" id="displaySystemContact">عنوان الشركة وهاتفها يظهر هنا</div>
+
+            <div class="user-tabs">
+                <button id="userTabCompany" class="user-tab-btn active" onclick="switchUserForm('company')">طلب حجز</button>
+                <button id="userTabNextBookings" class="user-tab-btn" onclick="switchUserForm('next')">لوحة التالي</button>
+                <button id="userTabStatus" class="user-tab-btn" onclick="switchUserForm('status')">استعلام</button>
+            </div>
+
+            <!-- استمارة طلب الحجز الجديد -->
+            <form id="formUserCompany" onsubmit="submitUserCompany(event)">
+                <div class="form-group"><label>اسم الشركة / المذخر</label><input type="text" id="cName" class="form-control" required></div>
+                <div class="form-group"><label>اسم المندوب والهاتف</label><input type="text" id="cDelegate" class="form-control" placeholder="الاسم - 07xxxxxxxx" required></div>
+                <div class="form-group"><label>نسبة خصم المندوب الحالية (%)</label><input type="number" id="cDiscount" class="form-control" placeholder="مثال: 15" min="0" max="100" required></div>
+                <div class="form-group"><label>مبلغ الاستحصال المتوقع</label><input type="text" id="cAmount" class="form-control" oninput="formatCurrency(this)" required></div>
+                <div class="form-group"><label>تاريخ ووقت المراجعة</label><input type="datetime-local" id="cDate" class="form-control" required></div>
+                <button type="submit" class="btn-submit">إرسال طلب الحجز</button>
+            </form>
+
+            <!-- لوحة التالي للحجوزات للعامة والمندوبين -->
+            <div id="divNextBookingsContainer" style="display: none;">
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px; text-align: center;">جدول الحجوزات القادمة والمؤكدة داخل الشركة</div>
+                <div id="nextBookingsList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <!-- الاستعلام الشخصي عن الطلب -->
+            <div id="divUserStatusSearch" style="display: none;">
+                <div class="form-group"><input type="text" id="searchStatusPhone" class="form-control" placeholder="ابحث باسم الشركة أو رقم الوصل..." oninput="liveCheckStatus()"></div>
+                <div id="statusResultContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <button class="btn-admin-toggle" onclick="showScreen('loginScreen')">دخول الإدارة ←</button>
+        </div>
+
+        <!-- واجهة تسجيل الدخول للمدير -->
+        <div id="loginScreen" class="flat-card" style="display: none;">
+            <div class="brand-name" style="margin-bottom: 15px;">بوابة الإدارة للمدير</div>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="adminEmail" class="form-control" placeholder="Manger.iraq@gmail.com" required style="text-align: left;"></div>
+                <div class="form-group"><label>كلمة المرور</label><input type="password" id="adminPassword" class="form-control" placeholder="••••••••" required style="text-align: left;"></div>
+                <button type="submit" class="btn-submit" style="background: var(--primary);">تسجيل الدخول</button>
+            </form>
+            <button class="btn-admin-toggle" onclick="showScreen('userBookingScreen')">← العودة للرئيسية</button>
+        </div>
+
+        <!-- لوحة تحكم الإدارة المطورة -->
+        <div id="dashboardScreen" style="display: none;">
+            <div class="flat-card" style="padding: 15px; margin-bottom: 12px;">
+                <div class="dash-header">
+                    <div class="brand-name" style="font-size: 16px;" id="dashTitleName">لوحة تحكم المدير</div>
+                    <button class="btn-logout" onclick="showScreen('userBookingScreen')">خروج</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><div id="totalCount" class="stat-val" style="color:#60a5fa;">0</div><div class="stat-lbl">الإجمالي</div></div>
+                    <div class="stat-card"><div id="pendingCount" class="stat-val" style="color:var(--warning);">0</div><div class="stat-lbl">الانتظار</div></div>
+                    <div class="stat-card"><div id="successCount" class="stat-val" style="color:var(--success);">0</div><div class="stat-lbl">المكتملة</div></div>
+                </div>
+            </div>
+
+            <!-- إعدادات الشركة -->
+            <div class="flat-card" style="padding: 15px; margin-bottom: 12px;">
+                <div class="config-section-title">🏢 إعدادات الشركة وبيانات الاتصال</div>
+                <div class="config-row"><span>اسم الشركة:</span><input type="text" id="cfgCompanyName" class="input-short"></div>
+                <div class="config-row"><span>رقم هاتف الشركة:</span><input type="text" id="cfgCompanyPhone" class="input-short"></div>
+                <div class="config-row"><span>عنوان الشركة الحالي:</span><input type="text" id="cfgCompanyAddress" class="input-short"></div>
+                
+                <div class="config-section-title">📢 شريط التبليغات والإعلانات النصي</div>
+                <div class="form-group" style="margin-top: 5px;">
+                    <input type="text" id="cfgSliderUrls" class="form-control" style="font-size: 12px;" placeholder="اكتب التبليغ الذي يظهر للمندوبين هنا...">
+                </div>
+
+                <div class="config-section-title">⚙️ القواعد العامة للحجز</div>
+                <div class="config-row"><span>السقف الشهري للحجوزات:</span><input type="number" id="monthlyLimit" class="input-short"></div>
+                <div class="config-row"><span>يوم العطلة الأسبوعية:</span>
+                    <select id="cfgCompanyHoliday" class="input-short">
+                        <option value="">لا يوجد</option>
+                        <option value="6">السبت</option>
+                        <option value="0">الأحد</option>
+                        <option value="1">الإثنين</option>
+                        <option value="2">الثلاثاء</option>
+                        <option value="3">الأربعاء</option>
+                        <option value="4">الخميس</option>
+                        <option value="5">الجمعة</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-save-cfg" onclick="updateConfig()">💾 حفظ إعدادات الشركة</button>
+            </div>
+
+            <div class="form-group"><input type="text" id="adminSearchInput" class="form-control" placeholder="🔍 ابحث بالاسم، الوصل، الخصم أو رتب تلقائياً..." oninput="renderDashboard()"></div>
+            
+            <div style="font-size: 12px; font-weight: 700; color: #db2777; margin-bottom: 8px; padding-right: 4px;">⚠️ الطلبات مرتبة تلقائياً بحسب أولوية (أعلى نسبة خصم للمندوب):</div>
+            <div id="appointmentsList"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // ==========================================
+        // 🛠️ إعدادات الفايربيس (Firebase Config)
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "ضع_apiKey_هنا",
+            authDomain: "ضع_authDomain_هنا",
+            databaseURL: "ضع_رابط_databaseURL_هنا"
+        };
+        
+        let db = null;
+        if(firebaseConfig.databaseURL.indexOf("http") === 0) {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        }
+
+        let appointments = [], globalMonthlyLimit = 4, companySystemName = "الحجز الإلكتروني";
+        let companyPhone = "", companyAddress = "", companyHoliday = "", sliderUrls = "";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(db) {
+                db.ref('config_company').on('value', snap => {
+                    const d = snap.val() || {};
+                    globalMonthlyLimit = d.globalMonthlyLimit || 4;
+                    companySystemName = d.companySystemName || "الحجز الإلكتروني";
+                    companyPhone = d.companyPhone || "";
+                    companyAddress = d.companyAddress || "";
+                    companyHoliday = d.companyHoliday !== undefined ? d.companyHoliday : "";
+                    sliderUrls = d.sliderUrls || "";
+
+                    document.getElementById('monthlyLimit').value = globalMonthlyLimit;
+                    document.getElementById('cfgCompanyName').value = companySystemName;
+                    document.getElementById('cfgCompanyPhone').value = companyPhone;
+                    document.getElementById('cfgCompanyAddress').value = companyAddress;
+                    document.getElementById('cfgCompanyHoliday').value = companyHoliday;
+                    document.getElementById('cfgSliderUrls').value = sliderUrls;
+
+                    document.getElementById('displaySystemName').innerText = companySystemName;
+                    document.getElementById('displaySystemContact').innerText = `📍 ${companyAddress || 'العنوان غير محدد'} | 📞 ${companyPhone || 'الهاتف غير محدد'}`;
+                    document.getElementById('dashTitleName').innerText = companySystemName;
+                    
+                    setupTicker(sliderUrls);
+                });
+
+                db.ref('appointments_company').on('value', snap => {
+                    appointments = [];
+                    const data = snap.val();
+                    for(let k in data) appointments.push({ fKey: k, ...data[k] });
+                    renderDashboard(); 
+                    liveCheckStatus();
+                    renderNextBookings();
+                });
+            }
+        });
+
+        // دالة مساعدة لاستخراج التاريخ فقط (Y-m-d) من النص لمقارنة أيام الحجز
+        function getDateString(dateTimeStr) {
+            if(!dateTimeStr) return "";
+            return dateTimeStr.split(" ")[0];
+        }
+
+        // دالة لحساب تسلسل الدور بناءً على وقت الطلب الفعلي للمقبولين والمؤجلين في نفس اليوم
+        function getQueueNumber(currentAppoint) {
+            if (currentAppoint.status !== 'confirmed' && currentAppoint.status !== 'postponed') return null;
+            
+            const targetDate = getDateString(currentAppoint.date);
+            
+            // تصفية كافة الحجوزات المقبولة أو المؤجلة في نفس اليوم
+            let sameDayApps = appointments.filter(a => 
+                getDateString(a.date) === targetDate && 
+                (a.status === 'confirmed' || a.status === 'postponed')
+            );
+            
+            // ترتيبهم تصاعدياً حسب المعرف (وقت الإرسال الفعلي للطلب) لتحديد من جاء أولاً
+            sameDayApps.sort((a, b) => (a.id || 0) - (b.id || 0));
+            
+            // إيجاد الترتيب (الدور)
+            const index = sameDayApps.findIndex(a => a.fKey === currentAppoint.fKey);
+            return index !== -1 ? index + 1 : null;
+        }
+
+        function updateConfig() {
+            globalMonthlyLimit = parseInt(document.getElementById('monthlyLimit').value) || 4;
+            companySystemName = document.getElementById('cfgCompanyName').value.trim() || "الحجز الإلكتروني";
+            companyPhone = document.getElementById('cfgCompanyPhone').value.trim();
+            companyAddress = document.getElementById('cfgCompanyAddress').value.trim();
+            companyHoliday = document.getElementById('cfgCompanyHoliday').value;
+            sliderUrls = document.getElementById('cfgSliderUrls').value.trim();
+
+            if(db) {
+                db.ref('config_company').set({ 
+                    globalMonthlyLimit, companySystemName, companyPhone, companyAddress, companyHoliday, sliderUrls 
+                }).then(() => {
+                    alert('✅ تم حفظ إعدادات الشركة وتحديث البيانات بنجاح!');
+                }).catch((err) => {
+                    alert('❌ حدث خطأ أثناء الحفظ: ' + err.message);
+                });
+            } else {
+                alert('الفايربيس غير متصل حالياً!');
+            }
+        }
+
+        function setupTicker(text) {
+            const bar = document.getElementById('companyTickerBar');
+            const tickerText = document.getElementById('companyTickerText');
+            if(!text || text.trim() === "") {
+                bar.style.display = 'none';
+            } else {
+                bar.style.display = 'block';
+                tickerText.innerText = text;
+            }
+        }
+
+        function formatCurrency(i) {
+            let v = i.value.replace(/[^\d]/g, '');
+            i.value = v ? Number(v).toLocaleString('en-US').replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) + " د.ع" : '';
+        }
+
+        function switchUserForm(type) {
+            document.getElementById('userTabCompany').classList.toggle('active', type==='company');
+            document.getElementById('userTabStatus').classList.toggle('active', type==='status');
+            document.getElementById('userTabNextBookings').classList.toggle('active', type==='next');
+            
+            document.getElementById('formUserCompany').style.display = type==='company'?'block':'none';
+            document.getElementById('divUserStatusSearch').style.display = type==='status'?'block':'none';
+            document.getElementById('divNextBookingsContainer').style.display = type==='next'?'block':'none';
+        }
+
+        function showScreen(id) {
+            document.getElementById('userBookingScreen').style.display = id==='userBookingScreen'?'block':'none';
+            document.getElementById('loginScreen').style.display = id==='loginScreen'?'block':'none';
+            document.getElementById('dashboardScreen').style.display = id==='dashboardScreen'?'block':'none';
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            if(document.getElementById('adminEmail').value.trim().toLowerCase()==='manger.iraq@gmail.com' && document.getElementById('adminPassword').value==='19001800') {
+                showScreen('dashboardScreen');
+            } else { alert('بيانات المدير غير صحيحة!'); }
+        }
+
+        function submitUserCompany(e) {
+            e.preventDefault();
+            const name = document.getElementById('cName').value.trim(), del = document.getElementById('cDelegate').value.trim();
+            const disc = parseInt(document.getElementById('cDiscount').value) || 0;
+            const am = document.getElementById('cAmount').value.trim(), dt = document.getElementById('cDate').value.replace('T',' ');
+
+            if(companyHoliday !== "" && new Date(dt).getDay() === parseInt(companyHoliday)) { 
+                alert('اليوم المختار يصادف عطلة الشركة الرسمية المحددة في النظام!'); 
+                return; 
+            }
+            if(appointments.filter(a=>a.companyName.toLowerCase()===name.toLowerCase()).length >= globalMonthlyLimit) { 
+                alert('تجاوزت هذه الشركة الحد الشهري المسموح به للحجوزات!'); 
+                return; 
+            }
+
+            const rec = "REC-" + (1000 + (appointments.length + 1));
+            const newB = { id: Date.now(), receiptNo: rec, companyName: name, delegateName: del, discount: disc, amount: am, date: dt, status: "waiting" };
+
+            if(db) db.ref('appointments_company').push(newB);
+            window.open(`https://wa.me/?text=*طلب حجز موعد جديد*%0A• *الوصل:* ${rec}%0A• *الشركة:* ${name}%0A• *خصم المندوب:* ${disc}%%0A• *الموعد:* ${dt}`, '_blank');
+            alert(`تم إرسال حجزك بنجاح برقم وصل: ${rec}`);
+            document.getElementById('formUserCompany').reset();
+        }
+
+        // عرض لوحة الحجوزات القادمة مع إضافة رقم التسلسل للزبائن
+        function renderNextBookings() {
+            const container = document.getElementById('nextBookingsList');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            let nextAppoints = appointments.filter(a => a.status === 'confirmed' || a.status === 'postponed');
+            
+            if(nextAppoints.length === 0) {
+                container.innerHTML = `<div style="text-align:center; color:var(--muted); font-size:12px; padding:15px;">لا توجد حجوزات تالية مؤكدة حالياً.</div>`;
+                return;
+            }
+
+            // ترتيب العرض حسب التاريخ والوقت تصاعدياً
+            nextAppoints.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            nextAppoints.forEach(a => {
+                const qNum = getQueueNumber(a);
+                container.innerHTML += `
+                    <div style="background: rgba(16, 185, 129, 0.08); border-right: 4px solid var(--success); padding: 10px; border-radius: 10px; font-size: 12px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                            <b>🏢 ${a.companyName}</b>
+                            <span class="queue-badge">تسلسل الحجز: ${qNum}</span>
+                        </div>
+                        <div style="color:#60a5fa; margin-top:2px;">🗓️ الموعد المؤكد: ${a.date}</div>
+                        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:4px;">
+                            <span>المندوب: ${a.delegateName}</span>
+                            <span>الوصل: ${a.receiptNo}</span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        // الاستعلام الشخصي يظهر حالة وتوجيه التسلسل للزبون مباشرة
+        function liveCheckStatus() {
+            const q = document.getElementById('searchStatusPhone').value.trim().toLowerCase(), res = document.getElementById('statusResultContainer');
+            if(!res) return; res.innerHTML = ''; if(!q) return;
+            appointments.filter(a => a.companyName.toLowerCase().includes(q) || a.receiptNo.toLowerCase().includes(q)).forEach(a => {
+                const qNum = getQueueNumber(a);
+                const qMsg = qNum ? `<br><span style="color:var(--success); font-weight:bold;">🔢 تسلسل دورك في هذا اليوم هو: (${qNum})</span>` : '';
+                
+                res.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; font-size:12px;">
+                    <b>${a.companyName} (${a.receiptNo})</b><br><span>الخصم: ${a.discount || 0}%</span> | <span style="color:#60a5fa;">الموعد: ${a.date}</span>${qMsg}<br>الحالة: ${a.status==='waiting'?'قيد الانتظار 🟠':a.status==='confirmed'?'مقبول 🟢':a.status==='rejected'?'مرفوض 🔴':'مؤجل 🔵'}
+                </div>`;
+            });
+        }
+
+        // لوحة تحكم المدير تظهر التسلسل بجانب نسبة الخصم
+        function renderDashboard() {
+            document.getElementById('totalCount').innerText = appointments.length;
+            document.getElementById('pendingCount').innerText = appointments.filter(a=>a.status==='waiting').length;
+            document.getElementById('successCount').innerText = appointments.filter(a=>a.status==='confirmed').length;
+
+            const list = document.getElementById('appointmentsList'), q = document.getElementById('adminSearchInput').value.toLowerCase();
+            if(!list) return; list.innerHTML = '';
+
+            let sortedAppointments = [...appointments].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+
+            sortedAppointments.filter(a => !q || a.companyName.toLowerCase().includes(q) || a.receiptNo.toLowerCase().includes(q)).forEach(a => {
+                const qNum = getQueueNumber(a);
+                const displayQueue = qNum ? `<span class="queue-badge" style="margin-left:5px;">دور: ${qNum}</span>` : '';
+
+                list.innerHTML += `
+                    <div class="appointment-card status-${a.status}">
+                        <div class="card-row" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span><b>${a.companyName}</b> (${a.receiptNo})</span>
+                            <div style="display:flex; gap:5px; align-items:center;">
+                                ${displayQueue}
+                                <span class="priority-badge">خصم: ${a.discount || 0}%</span>
+                            </div>
+                        </div>
+                        <div class="details-grid">
+                            <span>المندوب: ${a.delegateName}</span>
+                            <span>المبلغ المتوقع: ${a.amount}</span>
+                            <span>التاريخ المطلوب: ${a.date}</span>
+                            ${a.rejectReason ? `<span style="color:var(--error)">السبب: ${a.rejectReason}</span>` : ''}
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-action" style="background:var(--success)" onclick="updateStatus('${a.fKey}', 'confirmed', 'تم قبول وتأكيد حجزكم بنجاح!')">قبول</button>
+                            <button class="btn-action" style="background:var(--primary)" onclick="postponeAction('${a.fKey}')">تأجيل</button>
+                            <button class="btn-action" style="background:var(--error)" onclick="rejectAction('${a.fKey}')">رفض</button>
+                            <button class="btn-action" style="background:#475569" onclick="deleteAction('${a.fKey}')">حذف</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function updateStatus(key, stat, text) {
+            if(db) {
+                db.ref('appointments_company/' + key).update({ status: stat }).then(() => {
+                    // بعد التحديث نقوم بجلب البيانات وحساب التسلسل لإرساله عبر الواتساب
+                    db.ref('appointments_company/' + key).once('value', snap => {
+                        const updatedAppoint = { fKey: key, ...snap.val() };
+                        const qNum = getQueueNumber(updatedAppoint);
+                        const queueTxt = qNum ? `%0A🔢 تسلسل دوركم في الحجز: ${qNum}` : '';
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}${queueTxt}`, '_blank');
+                    });
+                });
+            }
+        }
+
+        function postponeAction(key) {
+            const newD = prompt("أدخل الموعد البديل للتأجيل (مثال: 2026-06-25 11:00):");
+            if(newD && db) {
+                db.ref('appointments_company/' + key).update({ date: newD, status: 'postponed' }).then(() => {
+                    db.ref('appointments_company/' + key).once('value', snap => {
+                        const updatedAppoint = { fKey: key, ...snap.val() };
+                        const qNum = getQueueNumber(updatedAppoint);
+                        const queueTxt = qNum ? `%0A🔢 تسلسل دوركم الجديد: ${qNum}` : '';
+                        window.open(`https://wa.me/?text=${encodeURIComponent('إشعار: تم تأجيل طلب حجزكم إلى موعد جديد وهو: ' + newD)}${queueTxt}`, '_blank');
+                    });
+                });
+            }
+        }
+
+        function rejectAction(key) {
+            const reason = prompt("ما هو سبب رفض الحجز؟");
+            if(reason && db) {
+                db.ref('appointments_company/' + key).update({ status: 'rejected', rejectReason: reason });
+                window.open(`https://wa.me/?text=${encodeURIComponent('إشعار: تم رفض طلب الحجز بسبب: ' + reason)}`, '_blank');
+            }
+        }
+
+        function deleteAction(key) { if(confirm("هل تريد حذف هذا الحجز تماماً من النظام؟") && db) db.ref('appointments_company/' + key).remove(); }
+    </script>
+</body>
+</html>
