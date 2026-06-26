@@ -2,513 +2,1791 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منظومة عيادة الأسنان المتكاملة - ERP سحابي</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام الإدارة الذكي | Smart POS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght=500;700;800&display=swap" rel="stylesheet">
     
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
     <style>
-        body { font-family: 'Cairo', sans-serif; }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f4f6fa;
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* البار العلوي */
+        .top-navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .right-actions, .left-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .nav-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s;
+        }
+
+        .btn-active-purple { border: 2px solid #dcd5f9; background: #f4f0ff; }
+
+        /* شبكة الكارتات */
+        .cards-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; flex: 1; }
+
+        .app-card {
+            border-radius: 24px; height: 160px; padding: 16px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            cursor: pointer; position: relative; border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04); transition: transform 0.2s;
+        }
+        .app-card:active { transform: scale(0.96); }
+        .card-top { display: flex; align-items: center; gap: 10px; }
+
+        .icon-glass {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card-title { font-size: 1.15rem; font-weight: 700; }
+        .card-field { background: rgba(0, 0, 0, 0.15); border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px; }
+        .field-label { font-size: 0.75rem; color: rgba(255, 255, 255, 0.75); }
+        .field-value { font-size: 1.1rem; font-weight: 800; }
+
+        .badge {
+            position: absolute; top: -5px; left: -5px; background: #ff3b30; color: white;
+            font-size: 0.75rem; font-weight: 700; width: 22px; height: 22px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #f4f6fa;
+        }
+
+        /* التدرجات اللونية */
+        .grad-orange { background: linear-gradient(135deg, #ff9233 0%, #ff5100 100%); }
+        .grad-blue { background: linear-gradient(135deg, #6c72f5 0%, #3b42e6 100%); }
+        .grad-cyan { background: linear-gradient(135deg, #2da1f8 0%, #0066eb 100%); }
+        .grad-green { background: linear-gradient(135deg, #2ecc71 0%, #219a52 100%); }
+        .grad-slate { background: linear-gradient(135deg, #6b7c96 0%, #3d4a5e 100%); }
+        .grad-red { background: linear-gradient(135deg, #ff527b 0%, #e60031 100%); }
+        .grad-purple { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); }
+
+        /* القائمة الممتدة كاملة الشاشة للهاتف */
+        .full-screen-menu {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #ffffff; color: #1c1c1e; z-index: 9999;
+            display: none; flex-direction: column; padding: 20px; overflow-y: auto;
+        }
+        .menu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid #e5e5ea; }
+        .menu-header h2 { font-weight: 800; font-size: 1.25rem; }
+        .btn-menu-back { background: #f2f2f7; border: none; padding: 8px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+        /* تبويبات الأقسام الداخلية */
+        .acc-tabs { display: flex; gap: 6px; margin-bottom: 15px; flex-wrap: wrap; }
+        .acc-tab-btn { flex: 1; min-width: 80px; padding: 12px 4px; border-radius: 12px; border: none; font-weight: 800; font-size: 0.8rem; cursor: pointer; background: #f2f2f7; color: #3a3a3c; text-align: center; }
+        .acc-tab-btn.active { background: #3d4a5e; color: #fff; }
+
+        /* كارت الفاتورة المختصر */
+        .mini-invoice-card {
+            background: #ffffff; border: 1px solid #e5e5ea; border-radius: 12px; padding: 12px;
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s; margin-bottom: 8px;
+        }
+        .mini-invoice-card:active { background: #f2f2f7; }
+        .invoice-info { display: flex; flex-direction: column; gap: 4px; }
+        .inv-id { font-weight: 800; font-size: 0.95rem; color: #1c1c1e; }
+        .inv-time { font-size: 0.75rem; color: #8e8e93; }
+        .inv-amount { font-weight: 800; font-size: 1rem; }
+
+        /* شاشة التفاصيل المنبثقة */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-box { background: #fff; width: 100%; max-width: 400px; border-radius: 20px; padding: 20px; color: #1c1c1e; }
+        .modal-title { font-weight: 800; font-size: 1.15rem; margin-bottom: 15px; border-bottom: 1px solid #e5e5ea; padding-bottom: 8px; }
+        .modal-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #f2f2f7; font-size: 0.9rem; font-weight: bold; }
+        .btn-modal-close { background: #ff3b30; color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; margin-top: 15px; cursor: pointer; }
+
+        /* الأنماط العامة للحقول والجداول */
+        .row-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .input-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .input-group label { font-size: 0.85rem; font-weight: 700; color: #3a3a3c; }
+        
+        .custom-input {
+            padding: 12px; border-radius: 12px; border: 1px solid #e5e5ea;
+            background: #f2f2f7; font-size: 0.95rem; font-weight: bold; outline: none; width: 100%; color: #1c1c1e;
+        }
+        .custom-input:focus { background: #fff; border-color: #3d4a5e; }
+
+        #scanner-container { width: 100%; max-width: 350px; margin: 10px auto; display: none; border-radius: 16px; overflow: hidden; border: 2px dashed #3b42e6; }
+        .btn-cam-scanner { padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; text-align: center; margin-bottom: 12px; user-select: none; }
+        .btn-add-item { color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin: 10px 0; text-align: center; }
+
+        .vertical-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .vertical-table th { padding: 10px; background: #f2f2f7; color: #3a3a3c; font-size: 0.8rem; text-align: right; }
+        .vertical-table td { padding: 12px 10px; border-bottom: 1px solid #e5e5ea; font-size: 0.9rem; font-weight: 700; text-align: right; color: #1c1c1e; }
+
+        .menu-summary { border-radius: 16px; padding: 15px; margin-top: 15px; display: flex; flex-direction: column; gap: 6px; }
+        .summary-row { display: flex; justify-content: space-between; font-weight: 800; font-size: 1.1rem; }
+
+        .btn-submit-all { color: white; border: none; padding: 16px; border-radius: 14px; font-size: 1.1rem; font-weight: bold; cursor: pointer; margin-top: 15px; text-align: center; width: 100%; }
+        .btn-action-edit { background: #2ecc71; color: white; border: none; padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+        
+        .report-section-title { font-size: 0.95rem; font-weight: 800; color: #1c1c1e; margin: 12px 0 6px 0; display: flex; align-items: center; gap: 6px;}
+        .report-date-filter { background: #f4f6fa; padding: 12px; border-radius: 16px; margin-bottom: 15px; border: 1px dashed #ced4da; }
+        
+        /* تصميم مخصص لحقول وجداول الحسابات التفصيلية */
+        .account-box { background: #fff; border: 1px solid #e5e5ea; border-radius: 16px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.01); }
+        .account-box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #f2f2f7; }
+        .account-box-title { font-size: 1.05rem; font-weight: 800; color: #1c1c1e; display: flex; align-items: center; gap: 6px; }
+        .details-badge { background: #f2f2f7; padding: 4px 10px; border-radius: 8px; font-size: 0.8rem; color: #3a3a3c; font-weight: bold; }
+
+        /* معاينة الشعار داخل الإعدادات */
+        .logo-preview-container { display: flex; align-items: center; gap: 15px; background: #f2f2f7; padding: 12px; border-radius: 14px; margin-top: 5px; }
+        .logo-preview { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; border: 1px solid #e5e5ea; background: #fff; display: none; }
+
+        /* 🔒 ستايل واجهة قفل نظام الاشتراك المحدثة */
+        .subscription-lock-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 11, 14, 0.98); backdrop-filter: blur(12px);
+            z-index: 999999; display: flex; justify-content: center; align-items: center;
+            color: #fff; font-family: 'Tajawal', sans-serif; direction: rtl;
+        }
+        .lock-card {
+            background: rgba(20, 22, 28, 0.8); border: 1px solid rgba(124, 58, 237, 0.3);
+            padding: 35px 25px; border-radius: 24px; text-align: center;
+            box-shadow: 0 15px 40px rgba(124, 58, 237, 0.2); max-width: 420px; width: 90%;
+        }
+        .lock-icon { font-size: 55px; color: #7c3aed; margin-bottom: 15px; animation: pulseGlow 2s infinite; }
+        @keyframes pulseGlow {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        .lock-card input {
+            width: 100%; padding: 14px; background: #1a1d24; border: 1px solid #333;
+            color: #fff; border-radius: 12px; margin: 20px 0 12px 0; text-align: center;
+            font-size: 1.05rem; font-weight: bold; letter-spacing: 1px; outline: none;
+        }
+        .lock-card input:focus { border-color: #7c3aed; }
+        .lock-card button {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            color: white; border: none; padding: 14px; border-radius: 12px;
+            cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem;
+        }
+        
+        /* 🔑 ستايل لوحة تسجيل الدخول والإنشاء لأول مرة */
+        .auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f4f6fa; z-index: 99999; display: flex; justify-content: center; align-items: center;
+            direction: rtl; padding: 20px;
+        }
+        .auth-card {
+            background: #ffffff; border-radius: 24px; padding: 30px; width: 100%; max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05); border: 1px solid #e5e5ea; color: #1c1c1e;
+        }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+<body>
 
-    <div id="patient-display-screen" class="hidden fixed inset-0 bg-slate-900 text-white z-50 flex flex-col p-6">
-        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
-            <h1 class="text-2xl font-bold text-teal-400 flex items-center gap-2">🦷 شاشة الحجوزات والدور الحالي</h1>
-            <button onclick="closePatientDisplay()" class="bg-slate-800 hover:bg-slate-700 text-xs py-1.5 px-4 rounded-xl transition cursor-pointer">الرجوع للوحة التحكم</button>
+    <div class="top-navbar">
+        <div class="right-actions">
+            <div class="nav-btn">☀️</div>
+            <div class="nav-btn">🔔</div>
+            <div class="nav-btn btn-active-purple" id="user-role-badge" style="width:auto; padding:0 12px; border-radius:12px; font-size:0.85rem; font-weight:bold; color:#7c3aed;">مدير النظام 👑</div>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1">
-            <div class="bg-gradient-to-br from-teal-600 to-teal-900 rounded-3xl p-8 flex flex-col justify-center items-center text-center shadow-2xl">
-                <span class="text-xs font-bold tracking-widest bg-teal-950/40 text-teal-200 px-4 py-1.5 rounded-full uppercase mb-4">المريض الحالي في غرفة الفحص</span>
-                <h2 id="display-current-name" class="text-4xl font-bold mb-4">لا يوجد مريض في الداخل</h2>
-                <div class="text-xl text-teal-100" id="display-current-status">العيادة جاهزة لاستقبال المريض التالي</div>
+        <div class="left-actions">
+            <div class="nav-btn" onclick="logoutSystem()" title="تسجيل الخروج">➔</div>
+            <div class="nav-btn" style="font-weight: bold;">☰</div>
+        </div>
+    </div>
+
+    <div class="cards-grid">
+        <div class="app-card grad-orange" id="card-purchases" onclick="openMenu('purchases')">
+            <div class="badge" id="badge-purchases">0</div>
+            <div class="card-top">
+                <div class="icon-glass">🛒</div>
+                <div class="card-title">المشتريات</div>
             </div>
-            <div class="bg-slate-950 rounded-3xl p-6 border border-slate-800 flex flex-col">
-                <h3 class="text-lg font-bold text-slate-400 mb-4 flex items-center gap-2">⏱️ الحجوزات القادمة (طابور الانتظار)</h3>
-                <div id="display-queue-list" class="space-y-3 flex-1 overflow-y-auto max-h-[500px] pr-2">
-                    <div class="text-center py-20 text-slate-600 text-sm">طابور الانتظار فارغ حالياً</div>
-                </div>
+            <div class="card-field">
+                <span class="field-label">فواتير الشراء اليوم</span>
+                <span class="field-value" id="val-purchases">0 فاتورة</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-blue" id="card-sales" onclick="openMenu('sales')">
+            <div class="badge" id="badge-sales" style="background:#0066eb;">0</div>
+            <div class="card-top">
+                <div class="icon-glass">💰</div>
+                <div class="card-title">المبيعات</div>
+            </div>
+            <div class="card-field">
+                <span class="field-label">مبيعات اليوم</span>
+                <span class="field-value" id="val-sales">0 د.ع</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-purple" id="card-online_sales" onclick="openMenu('online_sales')">
+            <div class="badge" id="badge-online-sales" style="background:#7c3aed;">0</div>
+            <div class="card-top">
+                <div class="icon-glass">🌐</div>
+                <div class="card-title">مبيعات أونلاين</div>
+            </div>
+            <div class="card-field">
+                <span class="field-label">أونلاين اليوم</span>
+                <span class="field-value" id="val-online-sales">0 د.ع</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-cyan" id="card-accounts" onclick="openMenu('accounts')">
+            <div class="card-top">
+                <div class="icon-glass">🏦</div>
+                <div class="card-title">الحسابات</div>
+            </div>
+            <div class="card-field">
+                <span class="field-label">صندوق الحسابات الشامل</span>
+                <span class="field-value" id="val-accounts">0 د.ع</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-green" id="card-stock" onclick="openMenu('stock')">
+            <div class="card-top">
+                <div class="icon-glass">📦</div>
+                <div class="card-title">المخزن</div>
+            </div>
+            <div class="card-field">
+                <span class="field-label">المواد المتوفرة</span>
+                <span class="field-value" id="val-stock">0 مواد</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-slate" id="card-reports" onclick="openMenu('reports')">
+            <div class="card-top">
+                <div class="icon-glass">📄</div>
+                <div class="card-title">التقارير</div>
+            </div>
+            <div class="card-field">
+                <span class="field-label">التحليلات الشاملة</span>
+                <span class="field-value" id="val-reports">جاهز 🧾</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-red" id="card-returns" onclick="openMenu('returns')" style="grid-column: span 2; height: 110px;">
+            <div class="badge" id="badge-returns" style="background:#e60031;">0</div>
+            <div class="card-top">
+                <div class="icon-glass">🔄</div>
+                <div class="card-title">المرتجعات اليومية للبضائع</div>
+            </div>
+            <div class="card-field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <span class="field-label">مرتجعات اليوم الفردية</span>
+                <span class="field-value" id="val-returns">0 مادة</span>
+            </div>
+        </div>
+
+        <div class="app-card grad-purple" id="card-settings" onclick="openMenu('settings')" style="grid-column: span 2; height: 110px;">
+            <div class="card-top">
+                <div class="icon-glass">⚙️</div>
+                <div class="card-title">إعدادات النظام والمحل</div>
+            </div>
+            <div class="card-field" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <span class="field-label">هوية الفاتورة والطباعة</span>
+                <span class="field-value" id="val-settings-status" style="font-size: 0.9rem;">اضبط الهوية ✏️</span>
             </div>
         </div>
     </div>
 
-    <div id="main-patient-section" class="w-full max-w-lg mx-auto p-4 flex flex-col justify-center gap-6 my-auto">
-        <div class="text-center">
-            <span class="text-4xl block mb-2">🦷</span>
-            <h1 class="text-xl font-bold text-slate-800">عيادة الأسنان التخصصية الحديثة</h1>
-            <p class="text-xs text-slate-400 mt-1">أهلاً بك في نظام الحجز الإلكتروني المباشر</p>
+    <div class="full-screen-menu" id="full-menu">
+        <div class="menu-header">
+            <h2 id="menu-title">عنوان القسم</h2>
+            <button class="btn-menu-back" onclick="closeMenu()">رجوع ➔</button>
         </div>
-        
-        <div class="bg-white p-6 rounded-2xl shadow-md border border-slate-100">
-            <div class="mb-4 text-center"><h2 class="text-md font-bold text-teal-700">📝 استمارة تثبيت موعد فوري</h2></div>
-            <form onsubmit="handlePatientBooking(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">اسم المريض الكامل</label>
-                    <input type="text" id="p-name" required placeholder="مثال: علي حسين أحمد" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50/50">
-                </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">العمر</label>
-                        <input type="number" id="p-age" required placeholder="25" min="1" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50/50">
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-xs font-semibold text-slate-500 mb-1">رقم الهاتف</label>
-                        <input type="tel" id="p-phone" required placeholder="077XXXXXXXX" class="w-full p-2.5 text-sm border border-slate-200 rounded-xl text-left focus:outline-none focus:border-teal-500 bg-slate-50/50" dir="ltr">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">وقت الحضور بالتاريخ</label>
-                    <input type="datetime-local" id="p-datetime" required class="w-full p-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50/50 text-right">
-                </div>
-                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl text-sm transition cursor-pointer">✨ تثبيت الحجز الإلكتروني فوراً</button>
-            </form>
-        </div>
-
-        <div class="mt-2 text-center">
-            <button onclick="toggleAdminFields()" class="bg-slate-900 hover:bg-slate-950 text-white font-semibold py-2 px-6 rounded-xl text-xs transition shadow-md cursor-pointer inline-flex items-center gap-2">⚙️ تسجيل دخول الإدارة</button>
-            <div id="admin-fields-container" class="hidden mt-3 p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 text-right animate-fadeIn">
-                <form onsubmit="handleDoctorLogin(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-[11px] text-slate-400 mb-1">البريد الإلكتروني</label>
-                        <input type="email" id="doc-email" required placeholder="ادخل البريد الإلكتروني للمدير" class="w-full p-2.5 text-xs border border-slate-800 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-950 text-left placeholder-slate-600" dir="ltr">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] text-slate-400 mb-1">كلمة المرور</label>
-                        <input type="password" id="doc-password" required placeholder="••••••••" class="w-full p-2.5 text-xs border border-slate-800 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-950 text-left placeholder-slate-600" dir="ltr">
-                    </div>
-                    <button type="submit" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2 rounded-xl text-xs transition cursor-pointer">🔐 تأكيد النفاذ والدخول</button>
-                </form>
-            </div>
-        </div>
+        <div id="menu-body"></div>
     </div>
 
-    <div id="app-dashboard-section" class="hidden flex-1 flex flex-col w-full animate-fadeIn">
-        <header class="bg-slate-900 text-white p-4 shadow-md flex justify-between items-center shrink-0 border-b border-slate-800">
-            <div class="flex items-center gap-3">
-                <h1 class="text-md font-bold text-teal-400">لوحة الإدارة الشاملة السحابية (Doctor ERP)</h1>
-                <button onclick="openPatientDisplay()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold py-1 px-3 rounded-lg transition flex items-center gap-1 cursor-pointer">📺 فتح شاشة العرض الخارجي</button>
-            </div>
-            <button onclick="handleLogout()" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold py-1.5 px-3 rounded-lg transition cursor-pointer">تسجيل خروج</button>
-        </header>
-
-        <div class="p-4 bg-white border-b border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                <span class="text-xs text-slate-400 block">إجمالي الإيرادات</span>
-                <strong id="stat-revenue" class="text-md text-emerald-600">0 د.ع</strong>
-            </div>
-            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                <span class="text-xs text-slate-400 block">إجمالي المصاريف</span>
-                <strong id="stat-expenses" class="text-md text-rose-600">0 د.ع</strong>
-            </div>
-            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                <span class="text-xs text-slate-400 block">صافي أرباح العيادة</span>
-                <strong id="stat-profit" class="text-md text-teal-600">0 د.ع</strong>
-            </div>
-            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
-                <span class="text-xs text-slate-400 block">حالة مخزن المواد</span>
-                <strong id="stat-inventory" class="text-xs text-amber-600">مستقر (جاري المزامنة)</strong>
-            </div>
-        </div>
-
-        <main class="p-4 max-w-full mx-auto w-full grid grid-cols-1 xl:grid-cols-4 gap-6 flex-1 items-start">
-            <div class="space-y-6 xl:col-span-1">
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2 border-slate-100 flex justify-between items-center">
-                        <span>👥 طابور الانتظار السحابي</span>
-                        <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md" id="queue-count">0 حجز</span>
-                    </h2>
-                    <div class="max-h-64 overflow-y-auto space-y-2" id="queue-list">
-                        <div id="empty-queue-msg" class="text-center py-8 text-xs text-slate-400">لا توجد حجوزات حية حالياً.</div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-800 mb-2">⚙️ إدارة حسابات السكرتارية</h2>
-                    <form onsubmit="addSecretaryAccount(event)" class="space-y-2">
-                        <input type="text" id="sec-username" required placeholder="اسم مستخدم السكرتير" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
-                        <input type="password" id="sec-password" required placeholder="رمز المرور" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
-                        <button type="submit" class="w-full bg-slate-800 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer">إضافة حساب سحابي</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="xl:col-span-2 space-y-6">
-                <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md flex justify-between items-center bg-gradient-to-r from-slate-900 to-teal-950">
-                    <div>
-                        <span class="text-[10px] bg-teal-500/20 text-teal-300 font-bold px-2.5 py-0.5 rounded-full tracking-wider">المريض الحالي داخل العيادة</span>
-                        <h3 class="text-md font-bold mt-1" id="active-name">لا يوجد مريض قيد الفحص</h3>
-                        <p class="text-xs text-slate-400 mt-1">العمر: <span id="active-age">--</span> | الهاتف: <span id="active-phone">--</span></p>
-                    </div>
-                    <button onclick="callNextPatient()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2 px-4 rounded-xl text-xs transition shadow-sm cursor-pointer">🔔 استدعاء الحجز التالي</button>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2">📋 السجل الصحي والتاريخ المرضي للحالة</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-1">أمراض مزمنة / حساسية</label>
-                            <input type="text" id="med-history" onchange="saveEHRData()" placeholder="سكري، حساسية بنسيلين" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-1">ملاحظات التشخيص العام</label>
-                            <input type="text" id="med-notes" onchange="saveEHRData()" placeholder="تسوس حاد في الطواحن" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-teal-700 mb-3">أطلس مخطط الأسنان للمعاينة والتشخيص المباشر</h2>
-                    <div class="mb-4">
-                        <h4 class="text-center text-[9px] font-bold text-slate-400 mb-1">الفك العلوي</h4>
-                        <div class="flex justify-center flex-wrap gap-1" id="upper-jaw"></div>
-                    </div>
-                    <hr class="border-dashed border-slate-200 my-3">
-                    <div>
-                        <h4 class="text-center text-[9px] font-bold text-slate-400 mb-1">الفك السفلي</h4>
-                        <div class="flex justify-center flex-wrap gap-1" id="lower-jaw"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2">💊 محرّر الوصفة الطبية الإلكترونية</h2>
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-3 gap-2">
-                            <input type="text" id="rx-drug" placeholder="اسم الدواء" class="col-span-2 p-2 text-xs border border-slate-200 rounded-xl">
-                            <input type="text" id="rx-dose" placeholder="الجرعة" class="p-2 text-xs border border-slate-200 rounded-xl">
-                        </div>
-                        <button onclick="addDrugToPrescription()" class="bg-teal-600 text-white text-xs font-bold py-1.5 px-4 rounded-xl transition cursor-pointer">+ إضافة دواء للوصفة</button>
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs space-y-1" id="rx-preview-list">
-                            <div class="text-slate-400 text-center py-2">الوصفة فارغة حالياً</div>
-                        </div>
-                        <button onclick="printPrescription()" class="w-full bg-slate-900 text-white text-xs font-bold py-2 rounded-xl transition cursor-pointer">🖨️ إصدار وطباعة الوصفة الإلكترونية</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="xl:col-span-1 space-y-6">
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-emerald-700 mb-3 border-b pb-2 border-slate-100">💰 الفاتورة الحالية وكشف الحساب</h2>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5">تكلفة الإجراء الكلية (د.ع)</label>
-                            <input type="number" id="bill-total" placeholder="0" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5">المبلغ المدفوع فوراً (د.ع)</label>
-                            <input type="number" id="bill-paid" placeholder="0" class="w-full p-2 text-xs border border-slate-200 rounded-xl bg-slate-50">
-                        </div>
-                        <button onclick="saveInvoice()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer">💾 ترحيل الفاتورة للحسابات</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-rose-700 mb-2">💸 تسجيل مصاريف عامة</h2>
-                    <div class="space-y-2">
-                        <input type="text" id="exp-title" placeholder="سبب الصرف" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
-                        <input type="number" id="exp-amount" placeholder="المبلغ الصافي" class="w-full p-2 text-xs border border-slate-200 rounded-xl">
-                        <button onclick="saveExpense()" class="w-full bg-rose-500 text-white font-bold py-2 rounded-xl text-xs transition cursor-pointer">📉 قيد مصروف جديد</button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-100">
-                    <h2 class="text-xs font-bold text-slate-800 mb-2">📦 مراقبة مخزن المواد الطبية</h2>
-                    <div class="space-y-2 text-xs" id="inventory-list-container"></div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="booking-success-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-center p-4 hidden z-50">
-        <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-xl text-center border border-slate-100">
-            <span class="text-3xl block mb-2">✅</span>
-            <h3 class="text-sm font-bold text-slate-800">تم تثبيت حجزك الإلكتروني</h3>
-            <p class="text-xs text-slate-500 mt-1">يرجى الانتظار لمتابعة اسمك عبر شاشة العرض الخارجية.</p>
-            <button onclick="closeBookingModal()" class="w-full mt-4 bg-teal-600 text-white text-xs font-bold py-2 rounded-xl transition cursor-pointer">موافق</button>
+    <div class="modal-overlay" id="invoice-modal">
+        <div class="modal-box">
+            <h3 class="modal-title" id="modal-invoice-title">تفاصيل القائمة</h3>
+            <div id="modal-invoice-items"></div>
+            <button class="btn-modal-close" onclick="closeInvoiceModal()">إغلاق النافذة</button>
         </div>
     </div>
-
-    <footer class="w-full text-center py-3 bg-slate-100 border-t border-slate-200 text-[11px] text-slate-400 shrink-0">
-        © 2026 جميع الحقوق محفوظة للنظام الذكي لإدارة العيادات (ERP Dental Clinic)
-    </footer>
 
     <script>
-        // تكوين الـ Firebase الخاص بمشروعك (المحجون حياً ومباشراً)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDAyqdSGBo8yHhwdV1UY_fyWY3g6bsxi-k",
-            authDomain: "dental-clinic-system-79954.firebaseapp.com",
-            projectId: "dental-clinic-system-79954",
-            storageBucket: "dental-clinic-system-79954.firebasestorage.app",
-            messagingSenderId: "641991893560",
-            appId: "1:641991893560:web:c2f5ce30c29c96dfb3bccd",
-            measurementId: "G-Y24Z3BTF93",
-            databaseURL: "https://dental-clinic-system-79954-default-rtdb.firebaseio.com/"
+        // قاعدة البيانات المركزية الحية
+        const database = {
+            purchases: [],
+            sales: [],
+            online_sales: [],
+            stock: [],
+            returns: []
         };
 
-        // تهيئة اتصال السيرفر بقاعدة البيانات
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        // الذاكرة التخزينية لإعدادات المحل والهوية الحية
+        const shopSettings = {
+            name: "المحل العام الذكي",
+            phone: "07700000000",
+            address: "العراق - بغداد",
+            logoData: "" 
+        };
 
-        const ADMIN_EMAIL = "Manger.iraq@gmail.com";
-        let globalBookingQueue = [];
-        let activePatient = null;
-        let currentPrescriptionDrugs = [];
+        let purchaseCart = []; 
+        let salesCart = [];
+        let onlineSalesCart = [];
+        let returnsCart = [];
+        let html5QrcodeScanner = null;
+        let currentSalesInvoiceNum = 5001;
+        let currentOnlineSalesInvoiceNum = 7001;
+        let currentPurchaseInvoiceNum = 1001;
+        let currentReturnInvoiceNum = 9001;
+        let currentUserSession = null; 
 
-        // الاستماع الفوري والمباشر للحجوزات من السيرفر السحابي
-        db.ref('bookings').on('value', (snapshot) => {
-            globalBookingQueue = [];
-            snapshot.forEach((childSnapshot) => {
-                let data = childSnapshot.val();
-                data.id = childSnapshot.key;
-                globalBookingQueue.push(data);
-            });
-            updateDashboardQueueVisuals();
-            updatePatientDisplayVisuals();
-        });
+        function getSystemDate() {
+            let d = new Date();
+            let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            return [year, month, day].join('-');
+        }
 
-        // الاستماع الفوري للحالة النشطة داخل الفحص
-        db.ref('activePatient').on('value', (snapshot) => {
-            activePatient = snapshot.val();
-            updateActivePatientUI();
-            updatePatientDisplayVisuals();
-        });
+        function getSystemTime() {
+            let d = new Date();
+            return d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' });
+        }
 
-        // الاستماع الفوري للحسابات المالية والمخزن
-        db.ref('financials').on('value', (snapshot) => {
-            const data = snapshot.val() || { revenue: 0, expenses: 0 };
-            document.getElementById('stat-revenue').innerText = `${(data.revenue || 0).toLocaleString()} د.ع`;
-            document.getElementById('stat-expenses').innerText = `${(data.expenses || 0).toLocaleString()} د.ع`;
-            document.getElementById('stat-profit').innerText = `${((data.revenue || 0) - (data.expenses || 0)).toLocaleString()} د.ع`;
-        });
+        // 🔒 واجهة تسجيل الدخول والتحقق من الحساب الأول للجهاز
+        function checkSystemAuthentication() {
+            const hasAccount = localStorage.getItem('pos_master_email');
+            const session = sessionStorage.getItem('pos_user_session');
 
-        db.ref('inventory').on('value', (snapshot) => {
-            const data = snapshot.val() || {
-                "أمبولات البنج الموضعي": { qty: 120, min: 30 },
-                "مادة الحشوات الضوئية": { qty: 15, min: 5 },
-                "قفازات معقمة (صندوق)": { qty: 4, min: 5 }
-            };
-            updateInventoryUI(data);
-        });
+            const oldAuth = document.getElementById('auth-panel');
+            if (oldAuth) oldAuth.remove();
 
-        function toggleAdminFields() { document.getElementById('admin-fields-container').classList.toggle('hidden'); }
-        function openPatientDisplay() { document.getElementById('patient-display-screen').classList.remove('hidden'); updatePatientDisplayVisuals(); }
-        function closePatientDisplay() { document.getElementById('patient-display-screen').classList.add('hidden'); }
-
-        function handleDoctorLogin(e) {
-            e.preventDefault();
-            const emailInput = document.getElementById('doc-email').value.trim();
-            const passwordInput = document.getElementById('doc-password').value;
-
-            if (emailInput === ADMIN_EMAIL && passwordInput === "19001800") {
-                document.getElementById('main-patient-section').classList.add('hidden');
-                document.getElementById('app-dashboard-section').classList.remove('hidden');
-                initDentalChart();
+            if (!session) {
+                let authHTML = '';
+                if (!hasAccount) {
+                    // فتح لأول مرة على هذا الجهاز -> إنشاء الحساب الرئيسي فقط
+                    authHTML = `
+                        <div id="auth-panel" class="auth-overlay">
+                            <div class="auth-card">
+                                <h2 style="font-weight:800; text-align:center; margin-bottom:10px; color:#a855f7;">مرحباً بك في نظامك الذكي</h2>
+                                <p style="font-size:0.85rem; color:#666; text-align:center; margin-bottom:20px;">قم بإنشاء حساب المدير الرئيسي الأول والوحيد المسموح به لهذا الجهاز.</p>
+                                <div class="input-group"><label>البريد الإلكتروني المعتمد</label><input type="email" id="auth-email" class="custom-input" placeholder="name@example.com"></div>
+                                <div class="input-group"><label>كلمة المرور</label><input type="password" id="auth-pass" class="custom-input" placeholder="••••••••"></div>
+                                <button onclick="registerFirstTimeMasterAccount()" style="background:linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color:white; border:none; padding:14px; border-radius:12px; font-weight:bold; width:100%; margin-top:10px; cursor:pointer;">إنشاء حساب المدير وقفل الجهاز 🔒</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // الحساب منشأ مسبقاً -> نموذج تسجيل دخول فقط ولا يمكن تسجيل ايميل ثاني رئيسي بنفس الجهاز
+                    authHTML = `
+                        <div id="auth-panel" class="auth-overlay">
+                            <div class="auth-card">
+                                <h2 style="font-weight:800; text-align:center; margin-bottom:20px; color:#3d4a5e;">تسجيل دخول الموظفين والمدير</h2>
+                                <div class="input-group"><label>البريد الإلكتروني</label><input type="email" id="auth-email" class="custom-input" placeholder="أدخل بريدك الإلكتروني..."></div>
+                                <div class="input-group"><label>كلمة المرور</label><input type="password" id="auth-pass" class="custom-input" placeholder="••••••••"></div>
+                                <button onclick="loginUserToSystem()" style="background:#3d4a5e; color:white; border:none; padding:14px; border-radius:12px; font-weight:bold; width:100%; margin-top:10px; cursor:pointer;">تسجيل الدخول الآمن 🔑</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                document.body.insertAdjacentHTML('beforeend', authHTML);
             } else {
-                alert("بيانات الدخول غير صحيحة! يرجى إعادة التحقق.");
+                currentUserSession = JSON.parse(session);
+                applyUserRolePermissions();
+                checkSubscriptionStatus();
             }
         }
 
-        // دفع حجز جديد إلى السيرفر السحابي
-        function handlePatientBooking(e) {
-            e.preventDefault();
-            const name = document.getElementById('p-name').value;
-            const age = document.getElementById('p-age').value;
-            const phone = document.getElementById('p-phone').value;
-            const datetime = document.getElementById('p-datetime').value;
+        function registerFirstTimeMasterAccount() {
+            const email = document.getElementById('auth-email').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            if (!email || !pass) { alert("يرجى إدخال البريد الإلكتروني وكلمة المرور لتأمين النظام!"); return; }
 
-            const formattedDateTime = new Date(datetime).toLocaleString('ar-IQ', {
-                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true
-            });
-
-            const queueNum = String(globalBookingQueue.length + 1).padStart(3, '0');
-
-            db.ref('bookings').push({
-                name: name, age: age, phone: phone, datetime: formattedDateTime, queueNum: queueNum
-            });
-
-            document.getElementById('booking-success-modal').classList.remove('hidden');
-            e.target.reset();
+            localStorage.setItem('pos_master_email', email);
+            localStorage.setItem('pos_master_pass', pass);
+            
+            let userObj = { email: email, role: 'master' };
+            sessionStorage.setItem('pos_user_session', JSON.stringify(userObj));
+            alert("🎉 تم إنشاء حساب المدير وقفل هذا الجهاز بنجاح!");
+            location.reload();
         }
 
-        function updateDashboardQueueVisuals() {
-            const container = document.getElementById('queue-list');
-            const msg = document.getElementById('empty-queue-msg');
-            document.getElementById('queue-count').innerText = `${globalBookingQueue.length} حجز`;
+        function loginUserToSystem() {
+            const email = document.getElementById('auth-email').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            if (!email || !pass) { alert("يرجى ملء الحقول المطلوبة!"); return; }
 
-            container.querySelectorAll('.booking-row').forEach(el => el.remove());
-            if (globalBookingQueue.length === 0) { msg.classList.remove('hidden'); return; }
-            msg.classList.add('hidden');
+            // 1. تحقق من حساب المدير
+            const masterEmail = localStorage.getItem('pos_master_email');
+            const masterPass = localStorage.getItem('pos_master_pass');
 
-            globalBookingQueue.forEach(b => {
-                const row = document.createElement('div');
-                row.className = "booking-row flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs";
-                row.innerHTML = `<div class="text-right"><span class="font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded mr-1">${b.queueNum}</span><strong class="text-slate-700">${b.name}</strong></div>`;
-                container.appendChild(row);
-            });
-        }
-
-        function updatePatientDisplayVisuals() {
-            const currentNameEl = document.getElementById('display-current-name');
-            const currentStatusEl = document.getElementById('display-current-status');
-            const listContainer = document.getElementById('display-queue-list');
-
-            if (activePatient) {
-                currentNameEl.innerText = activePatient.name;
-                currentStatusEl.innerText = `رقم الدور الحالي: ${activePatient.queueNum}`;
-            } else {
-                currentNameEl.innerText = "لا يوجد مريض بالداخل";
-                currentStatusEl.innerText = "العيادة جاهزة لاستقبال المريض التالي";
-            }
-
-            listContainer.innerHTML = '';
-            if (globalBookingQueue.length === 0) {
-                listContainer.innerHTML = '<div class="text-center py-20 text-slate-600 text-sm">طابور الانتظار فارغ حالياً</div>';
+            if (email === masterEmail && pass === masterPass) {
+                sessionStorage.setItem('pos_user_session', JSON.stringify({ email: email, role: 'master' }));
+                location.reload();
                 return;
             }
 
-            globalBookingQueue.forEach((b, index) => {
-                const badgeClass = index === 0 ? 'bg-amber-500 text-slate-950 font-bold animate-pulse' : 'bg-slate-800 text-slate-300';
-                const prefixText = index === 0 ? 'التالي مباشرة' : `انتظار (${index + 1})`;
-                item = document.createElement('div');
-                item.className = "flex justify-between items-center p-4 bg-slate-900 rounded-2xl border border-slate-800";
-                item.innerHTML = `<div class="flex items-center gap-3"><span class="text-sm font-bold text-teal-400 bg-teal-950 px-2.5 py-1 rounded-xl">${b.queueNum}</span><h4 class="text-md font-semibold">${b.name}</h4></div><span class="text-xs px-3 py-1 rounded-lg ${badgeClass}">${prefixText}</span>`;
-                listContainer.appendChild(item);
-            });
-        }
+            // 2. تحقق من الحسابات الفرعية (المحاسب وأمين المخزن)
+            let subAccounts = JSON.parse(localStorage.getItem('pos_sub_accounts') || "[]");
+            let matched = subAccounts.find(x => x.email === email && x.pass === pass);
 
-        function callNextPatient() {
-            if (globalBookingQueue.length === 0) { alert("طابور الحجوزات السحابي فارغ."); return; }
-            const nextPatient = globalBookingQueue[0];
-
-            // إزالة المريض من الطابور السحابي وتعيينه كمريض نشط حالي
-            db.ref('bookings/' + nextPatient.id).remove();
-            db.ref('activePatient').set(nextPatient);
-
-            // تصفير حقول الفحص القديمة تلقائياً للمريض الجديد
-            db.ref('activeToothChart').remove();
-            document.getElementById('med-history').value = '';
-            document.getElementById('med-notes').value = '';
-            document.getElementById('bill-total').value = '';
-            document.getElementById('bill-paid').value = '';
-            currentPrescriptionDrugs = [];
-            updateRxPreviewList();
-        }
-
-        function updateActivePatientUI() {
-            if (activePatient) {
-                document.getElementById('active-name').innerText = activePatient.name;
-                document.getElementById('active-age').innerText = activePatient.age;
-                document.getElementById('active-phone').innerText = activePatient.phone;
+            if (matched) {
+                sessionStorage.setItem('pos_user_session', JSON.stringify({ email: matched.email, role: matched.role }));
+                location.reload();
             } else {
-                document.getElementById('active-name').innerText = "لا يوجد مريض قيد الفحص";
-                document.getElementById('active-age').innerText = "--";
-                document.getElementById('active-phone').innerText = "--";
+                alert("❌ تفاصيل الدخول غير صحيحة أو غير مصرح لك بدخول هذا الجهاز!");
             }
         }
 
-        function saveEHRData() {
-            if(!activePatient) return;
-            const history = document.getElementById('med-history').value;
-            const notes = document.getElementById('med-notes').value;
-            db.ref('patients_ehr/' + activePatient.phone).set({ history, notes });
+        function logoutSystem() {
+            sessionStorage.removeItem('pos_user_session');
+            location.reload();
         }
 
-        function addDrugToPrescription() {
-            const drug = document.getElementById('rx-drug').value.trim();
-            const dose = document.getElementById('rx-dose').value.trim();
-            if (!drug) return;
-            currentPrescriptionDrugs.push({ drug, dose });
-            document.getElementById('rx-drug').value = '';
-            document.getElementById('rx-dose').value = '';
-            updateRxPreviewList();
-        }
-
-        function updateRxPreviewList() {
-            const container = document.getElementById('rx-preview-list');
-            container.innerHTML = '';
-            if (currentPrescriptionDrugs.length === 0) { container.innerHTML = '<div class="text-slate-400 text-center py-2">الوصفة فارغة حالياً</div>'; return; }
-            currentPrescriptionDrugs.forEach((d, i) => { container.innerHTML += `<div class="flex justify-between border-b border-slate-100 pb-1"><span>${i+1}. <b>${d.drug}</b> - ${d.dose}</span></div>`; });
-        }
-
-        function printPrescription() {
-            if (!activePatient) { alert("يجب استدعاء مريض أولاً."); return; }
-            if (currentPrescriptionDrugs.length === 0) { alert("الوصفة فارغة."); return; }
-            alert(`📝 تم تصدير وطباعة الوصفة الإلكترونية للمريض: ${activePatient.name}`);
-        }
-
-        function saveInvoice() {
-            if (!activePatient) { alert("يجب استدعاء مريض أولاً."); return; }
-            const paid = parseFloat(document.getElementById('bill-paid').value) || 0;
-            db.ref('financials/revenue').transaction(current => (current || 0) + paid);
-            alert("💸 تم ترحيل الفاتورة للحسابات السحابية بنجاح.");
-        }
-
-        function saveExpense() {
-            const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
-            if (amount <= 0) return;
-            db.ref('financials/expenses').transaction(current => (current || 0) + amount);
-            document.getElementById('exp-title').value = '';
-            document.getElementById('exp-amount').value = '';
-            alert("📉 تم تسجيل قيد المصروف السحابي بنجاح.");
-        }
-
-        function updateInventoryUI(data) {
-            const container = document.getElementById('inventory-list-container');
-            container.innerHTML = '';
-            let hasShortage = false;
-
-            for (const [name, d] of Object.entries(data)) {
-                const isShort = d.qty <= d.min;
-                if (isShort) hasShortage = true;
-                const badge = isShort ? '<span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-bold">⚠️ نقص</span>' : '<span class="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">كافي</span>';
-                container.innerHTML += `<div class="flex justify-between items-center p-2 bg-slate-50 rounded-xl border border-slate-100"><span>${name} (<b>${d.qty}</b>)</span>${badge}</div>`;
-            }
-            document.getElementById('stat-inventory').innerText = hasShortage ? "⚠️ نقص في بعض المواد" : "مستقر (خالٍ من النقص)";
-        }
-
-        function initDentalChart() {
-            const upper = document.getElementById('upper-jaw'); const lower = document.getElementById('lower-jaw');
-            upper.innerHTML = ''; lower.innerHTML = '';
-            for (let i = 1; i <= 16; i++) upper.appendChild(createToothIcon(i, 'rounded-t-md'));
-            for (let i = 17; i <= 32; i++) lower.appendChild(createToothIcon(i, 'rounded-b-md'));
+        function applyUserRolePermissions() {
+            if (!currentUserSession) return;
+            const badge = document.getElementById('user-role-badge');
             
-            db.ref('activeToothChart').on('value', snapshot => {
-                const damagedTeeth = snapshot.val() || {};
-                Object.keys(damagedTeeth).forEach(num => {
-                    const tBtn = document.getElementById(`tooth-${num}`);
-                    if(tBtn) tBtn.className = tBtn.className.replace('border-emerald-400 bg-emerald-50/60 text-emerald-800', 'border-red-500 bg-red-50 text-red-700');
-                });
+            // تهيئة إخفاء/إظهار الكروت حسب الصلاحيات
+            const cards = ['purchases', 'sales', 'online_sales', 'accounts', 'stock', 'reports', 'returns', 'settings'];
+            cards.forEach(c => {
+                const el = document.getElementById(`card-${c}`);
+                if(el) el.style.display = 'flex';
             });
+
+            if (currentUserSession.role === 'master') {
+                if(badge) badge.innerText = "مدير النظام 👑";
+            } 
+            else if (currentUserSession.role === 'accountant') {
+                if(badge) badge.innerText = "المحاسب 💰";
+                // المحاسب لا يدخل الإعدادات والمخزن والتقارير العامة للسيستم
+                if(document.getElementById('card-settings')) document.getElementById('card-settings').style.display = 'none';
+                if(document.getElementById('card-stock')) document.getElementById('card-stock').style.display = 'none';
+                if(document.getElementById('card-reports')) document.getElementById('card-reports').style.display = 'none';
+            } 
+            else if (currentUserSession.role === 'stockkeeper') {
+                if(badge) badge.innerText = "أمين المخزن 📦";
+                // أمين المخزن يدخل فقط للمخزن والمشتريات والمرتجعات لترتيب البضاعة
+                const allowed = ['purchases', 'stock', 'returns'];
+                cards.forEach(c => {
+                    if (!allowed.includes(c)) {
+                        const el = document.getElementById(`card-${c}`);
+                        if(el) el.style.display = 'none';
+                    }
+                });
+            }
         }
 
-        function createToothIcon(num, radius) {
-            const btn = document.createElement('button');
-            btn.id = `tooth-${num}`;
-            btn.className = `w-6 h-8 border border-emerald-400 bg-emerald-50/60 ${radius} text-[9px] font-bold text-emerald-800 flex items-center justify-center cursor-pointer hover:bg-emerald-100 transition`;
-            btn.innerText = num;
-            btn.onclick = () => {
-                if(!activePatient) { alert("يرجى استدعاء حجز أولاً."); return; }
-                db.ref('activeToothChart/' + num).set(true);
+        // 🔒 دالة فحص وتأمين نظام الاشتراك والقفل
+        function checkSubscriptionStatus() {
+            let expiryDateStr = localStorage.getItem('pos_expiry_date');
+            if (!expiryDateStr) {
+                let trialDate = new Date();
+                trialDate.setDate(trialDate.getDate() + 3); 
+                localStorage.setItem('pos_expiry_date', trialDate.toISOString());
+                expiryDateStr = trialDate.toISOString();
+            }
+
+            const expiryDate = new Date(expiryDateStr);
+            const today = new Date();
+
+            if (today > expiryDate) {
+                showLockScreen();
+            }
+        }
+
+        function showLockScreen() {
+            const oldLock = document.getElementById('subscription-lock');
+            if (oldLock) oldLock.remove();
+
+            const lockHTML = `
+                <div id="subscription-lock" class="subscription-lock-overlay">
+                    <div class="lock-card">
+                        <div class="lock-icon">🔒</div>
+                        <h2 style="font-weight:800; font-size:1.4rem;">انتهت صلاحية تفعيل النظام</h2>
+                        <p style="color: #aaa; font-size: 0.9rem; margin-top: 10px; line-height:1.5;">يرجى التواصل معنا لتجديد الاشتراك السنوي أو الشهري وتزويدك بمفتاح التفعيل المباشر.</p>
+                        <input type="text" id="activation-key" placeholder="أدخل مفتاح الترخيص المعتمد...">
+                        <button onclick="validateAndActivateKey()">تفعيل النظام وتشغيله الحين</button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', lockHTML);
+        }
+
+        function validateAndActivateKey() {
+            const keyInput = document.getElementById('activation-key').value.trim();
+            const licenseKeys = {
+                "ACT-30DAYS-9921": 30,
+                "ACT-180DAYS-4412": 180,
+                "ACT-365DAYS-7789": 365
             };
-            return btn;
+
+            if (licenseKeys[keyInput]) {
+                let daysToAdd = licenseKeys[keyInput];
+                let newExpiry = new Date();
+                newExpiry.setDate(newExpiry.getDate() + daysToAdd);
+                
+                localStorage.setItem('pos_expiry_date', newExpiry.toISOString());
+                alert(`🎉 تم تفعيل ترخيصك بنجاح! تم تمديد صلاحية النظام لمدة ${daysToAdd} يوم.`);
+                document.getElementById('subscription-lock').remove();
+                location.reload();
+            } else {
+                alert("❌ مفتاح الترخيص الذي أدخلته غير صحيح أو انتهت صلاحيته! راجع المطور.");
+            }
         }
 
-        function addSecretaryAccount(e) {
-            e.preventDefault();
-            const user = document.getElementById('sec-username').value.trim();
-            const pass = document.getElementById('sec-password').value;
-            db.ref('secretaries/' + user).set(pass);
-            alert(`تم إنشاء حساب السكرتير سحابياً بنجاح: ${user}`);
-            e.target.reset();
+        // تحديث الكروت الرئيسية بالواجهة
+        function updateMainDashboardCards() {
+            let today = getSystemDate();
+            
+            let todayPurchases = database.purchases.filter(p => p.date === today).length;
+            if(document.getElementById('badge-purchases')) document.getElementById('badge-purchases').innerText = todayPurchases;
+            if(document.getElementById('val-purchases')) document.getElementById('val-purchases').innerText = todayPurchases + " فاتورة";
+
+            let todaySalesSum = database.sales.filter(s => s.date === today).reduce((sum, i) => sum + i.total, 0);
+            if(document.getElementById('badge-sales')) document.getElementById('badge-sales').innerText = database.sales.filter(s => s.date === today).length;
+            if(document.getElementById('val-sales')) document.getElementById('val-sales').innerText = todaySalesSum.toLocaleString() + " د.ع";
+
+            let todayOnlineSum = database.online_sales.filter(o => o.date === today).reduce((sum, i) => sum + i.total, 0);
+            if(document.getElementById('badge-online-sales')) document.getElementById('badge-online-sales').innerText = database.online_sales.filter(o => o.date === today).length;
+            if(document.getElementById('val-online-sales')) document.getElementById('val-online-sales').innerText = todayOnlineSum.toLocaleString() + " د.ع";
+
+            let totalStockItems = database.stock.reduce((sum, i) => sum + i.qty, 0);
+            if(document.getElementById('val-stock')) document.getElementById('val-stock').innerText = totalStockItems + " قطعة";
+
+            let totalPurchasesAll = database.purchases.reduce((sum, i) => sum + i.total, 0);
+            let totalSalesAll = database.sales.reduce((sum, i) => sum + i.total, 0) + database.online_sales.reduce((sum, i) => sum + i.total, 0);
+            let netAccountBox = totalSalesAll - totalPurchasesAll;
+            if(document.getElementById('val-accounts')) document.getElementById('val-accounts').innerText = netAccountBox.toLocaleString() + " د.ع";
+
+            let todayReturnsCount = database.returns.filter(r => r.date === today).reduce((sum, i) => sum + i.items.length, 0);
+            if(document.getElementById('badge-returns')) document.getElementById('badge-returns').innerText = database.returns.filter(r => r.date === today).length;
+            if(document.getElementById('val-returns')) document.getElementById('val-returns').innerText = todayReturnsCount + " مادة";
         }
 
-        function closeBookingModal() { document.getElementById('booking-success-modal').classList.add('hidden'); }
-        function handleLogout() { location.reload(); }
+        function openMenu(type) {
+            const menu = document.getElementById('full-menu');
+            const title = document.getElementById('menu-title');
+            const body = document.getElementById('menu-body');
+            menu.style.display = 'flex';
+
+            if (type === 'purchases') {
+                title.innerText = "قسم المشتريات وإدخل القوائم";
+                purchaseCart = [];
+                body.innerHTML = `
+                    <div class="row-grid">
+                        <div class="input-group"><label>اسم المورد</label><input type="text" id="p-customer" class="custom-input" placeholder="اكتب اسم المورد..."></div>
+                        <div class="input-group"><label>رقم القائمة</label><input type="text" id="p-invoice-num" class="custom-input" value="${currentPurchaseInvoiceNum}"></div>
+                    </div>
+                    <div class="btn-cam-scanner" style="background:#fff5f0; color:#ff5100; border:1px solid #ffe2d4;" onclick="toggleCameraScanner('purchases')">📷 تشغيل قارئ باركود الكاميرا</div>
+                    <div id="scanner-container"></div>
+                    <div class="input-group"><label>باركود المادة</label><input type="text" id="p-barcode" class="custom-input" placeholder="امسح أو اكتب الباركود..."></div>
+                    <div class="input-group"><label>اسم المادة</label><input type="text" id="p-item-name" class="custom-input" placeholder="مثال: مادة مخزنية جديدة"></div>
+                    <div class="row-grid">
+                        <div class="input-group"><label>سعر الشراء (د.ع)</label><input type="number" id="p-cost" class="custom-input" placeholder="0"></div>
+                        <div class="input-group"><label>العدد (الكمية)</label><input type="number" id="p-qty" class="custom-input" placeholder="1"></div>
+                    </div>
+                    <div class="input-group"><label>سعر البيع المقترح (د.ع)</label><input type="number" id="p-sell-price" class="custom-input" placeholder="0"></div>
+                    <button class="btn-add-item" style="background:#2ecc71;" onclick="addItemToPurchaseList()">📥 إضافة المادة الحالية للقائمة</button>
+                    <div style="overflow-x:auto; margin-top:15px;">
+                        <table class="vertical-table">
+                            <thead><tr><th>المادة</th><th>الشراء</th><th>العدد</th><th>المجموع</th></tr></thead>
+                            <tbody id="purchase-table-rows"><tr><td colspan="4" style="text-align:center; color:#8e8e93; padding:15px 0;">لم يتم إضافة مواد بعد</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="menu-summary" style="background:#fff8f5; border:1px solid #ffe2d4;">
+                        <div class="summary-row" style="color:#ff5100;"><span>المجموع الكلي للقائمة:</span><span id="purchase-list-total">0 د.ع</span></div>
+                    </div>
+                    <button class="btn-submit-all" style="background:#ff5100;" onclick="finalizePurchaseInvoice()">حفظ وقيد الفاتورة بالكامل 🧾</button>
+                `;
+            } 
+            else if (type === 'sales') {
+                title.innerText = "شاشة البيع السريع والكاشير";
+                salesCart = [];
+                body.innerHTML = `
+                    <div class="row-grid">
+                        <div class="input-group"><label>اسم الزبون</label><input type="text" id="s-customer" class="custom-input" value="زبون نقدي"></div>
+                        <div class="input-group"><label>رقم قائمة البيع</label><input type="text" id="s-invoice-num" class="custom-input" value="${currentSalesInvoiceNum}" readonly></div>
+                    </div>
+                    <div class="btn-cam-scanner" style="background:#f0f4ff; color:#3b42e6; border:1px solid #d5e2f9;" onclick="toggleCameraScanner('sales')">📷 تشغيل قارئ باركود الكاميرا</div>
+                    <div id="scanner-container"></div>
+                    <div class="input-group"><label>باركود المادة</label><input type="text" id="s-barcode" class="custom-input" placeholder="امسح هنا..." onkeypress="handleManualBarcode(event)"></div>
+                    <div class="input-group"><label>اسم المادة المباعة</label><input type="text" id="s-item-name" class="custom-input" placeholder="اسم المنتج"></div>
+                    <div class="row-grid">
+                        <div class="input-group"><label>سعر البيع (د.ع)</label><input type="number" id="s-price" class="custom-input" placeholder="0"></div>
+                        <div class="input-group"><label>العدد المطلوب</label><input type="number" id="s-qty" class="custom-input" value="1"></div>
+                    </div>
+                    <div class="input-group"><label>خصم مباشر (د.ع)</label><input type="number" id="s-discount" class="custom-input" value="0"></div>
+                    <button class="btn-add-item" style="background:#3b42e6;" onclick="addItemToSalesList()">📥 إضافة المادة للفاتورة</button>
+                    <div style="overflow-x:auto; margin-top:15px;">
+                        <table class="vertical-table">
+                            <thead><tr><th>المادة</th><th>السعر</th><th>العدد</th><th>الخصم</th><th>المجموع</th></tr></thead>
+                            <tbody id="sales-table-rows"><tr><td colspan="5" style="text-align:center; color:#8e8e93; padding:15px 0;">السلة فارغة، ابدأ بالبيع</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="menu-summary" style="background:#f5f7ff; border:1px solid #d4deff;">
+                        <div class="summary-row" style="color:#3b42e6;"><span>إجمالي الوصل الصافي:</span><span id="sales-list-total">0 د.ع</span></div>
+                    </div>
+                    <button class="btn-submit-all" style="background:#3b42e6;" onclick="finalizeSalesInvoice()">إتمامات وحفظ قائمة البيع الحالية 🧾</button>
+                `;
+                setTimeout(() => { if(document.getElementById('s-barcode')) document.getElementById('s-barcode').focus(); }, 250);
+            }
+            else if (type === 'online_sales') {
+                title.innerText = "شاشة مبيعات أونلاين وتوصيل طلبات";
+                onlineSalesCart = [];
+                body.innerHTML = `
+                    <div class="row-grid">
+                        <div class="input-group"><label>اسم زبون الأونلاين / البيج</label><input type="text" id="on-customer" class="custom-input" value="زبون أونلاين"></div>
+                        <div class="input-group"><label>رقم قائمة أونلاين</label><input type="text" id="on-invoice-num" class="custom-input" value="${currentOnlineSalesInvoiceNum}" readonly></div>
+                    </div>
+                    <div class="btn-cam-scanner" style="background:#f3e8ff; color:#7c3aed; border:1px solid #e9d5ff;" onclick="toggleCameraScanner('online_sales')">📷 تشغيل قارئ باركود الكاميرا</div>
+                    <div id="scanner-container"></div>
+                    <div class="input-group"><label>باركود المادة</label><input type="text" id="on-barcode" class="custom-input" placeholder="امسح هنا..." onkeypress="handleOnlineManualBarcode(event)"></div>
+                    <div class="input-group"><label>اسم المادة المباعة</label><input type="text" id="on-item-name" class="custom-input" placeholder="اسم المنتج"></div>
+                    <div class="row-grid">
+                        <div class="input-group"><label>سعر البيع (د.ع)</label><input type="number" id="on-price" class="custom-input" placeholder="0"></div>
+                        <div class="input-group"><label>العدد المطلوب</label><input type="number" id="on-qty" class="custom-input" value="1"></div>
+                    </div>
+                    <div class="input-group"><label>خصم مباشر / أونلاين (د.ع)</label><input type="number" id="on-discount" class="custom-input" value="0"></div>
+                    <button class="btn-add-item" style="background:#7c3aed;" onclick="addItemToOnlineSalesList()">📥 إضافة المادة للفاتورة</button>
+                    <div style="overflow-x:auto; margin-top:15px;">
+                        <table class="vertical-table">
+                            <thead><tr><th>المادة</th><th>السعر</th><th>العدد</th><th>الخصم</th><th>المجموع</th></tr></thead>
+                            <tbody id="online-sales-table-rows"><tr><td colspan="5" style="text-align:center; color:#8e8e93; padding:15px 0;">السلة فارغة، ابدأ بإضافة طلبات الأونلاين</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="menu-summary" style="background:#faf5ff; border:1px solid #f3e8ff;">
+                        <div class="summary-row" style="color:#7c3aed;"><span>إجمالي وصل الأونلاين:</span><span id="online-sales-list-total">0 د.ع</span></div>
+                    </div>
+                    <button class="btn-submit-all" style="background:#7c3aed;" onclick="finalizeOnlineSalesInvoice()">إتمام وحفظ قائمة الأونلاين الحالية 🧾</button>
+                `;
+                setTimeout(() => { if(document.getElementById('on-barcode')) document.getElementById('on-barcode').focus(); }, 250);
+            }
+            else if (type === 'returns') {
+                title.innerText = "شاشة وإيصالات المرتجعات البضاعة";
+                returnsCart = [];
+                body.innerHTML = `
+                    <div class="row-grid">
+                        <div class="input-group"><label>اسم الزبون / المرجّع</label><input type="text" id="r-customer" class="custom-input" value="زبون نقدي"></div>
+                        <div class="input-group"><label>رقم وصل الارتجاع</label><input type="text" id="r-invoice-num" class="custom-input" value="${currentReturnInvoiceNum}" readonly></div>
+                    </div>
+                    <div class="btn-cam-scanner" style="background:#fff0f2; color:#e60031; border:1px solid #ffd4dc;" onclick="toggleCameraScanner('returns')">📷 تشغيل قارئ باركود الكاميرا</div>
+                    <div id="scanner-container"></div>
+                    <div class="input-group"><label>باركود المادة المرتجعة</label><input type="text" id="r-barcode" class="custom-input" placeholder="امسح هنا أو اكتبه..." onkeypress="handleReturnManualBarcode(event)"></div>
+                    <div class="input-group"><label>اسم المادة المسترجعة</label><input type="text" id="r-item-name" class="custom-input" placeholder="اسم المنتج المسترجع"></div>
+                    <div class="row-grid">
+                        <div class="input-group"><label>سعر الإرجاع المالي (د.ع)</label><input type="number" id="r-price" class="custom-input" placeholder="0"></div>
+                        <div class="input-group"><label>العدد (الكمية المسترجعة)</label><input type="number" id="r-qty" class="custom-input" value="1"></div>
+                    </div>
+                    <button class="btn-add-item" style="background:#e60031;" onclick="addItemToReturnsList()">📥 قيد المادة في سلة المرتجعات</button>
+                    <div style="overflow-x:auto; margin-top:15px;">
+                        <table class="vertical-table">
+                            <thead><tr><th>المادة</th><th>سعر المرجوع</th><th>العدد</th><th>المجموع</th></tr></thead>
+                            <tbody id="returns-table-rows"><tr><td colspan="4" style="text-align:center; color:#8e8e93; padding:15px 0;">السلة فارغة، أضف المواد المسترجعة</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="menu-summary" style="background:#fff5f6; border:1px solid #ffd4dc;">
+                        <div class="summary-row" style="color:#e60031;"><span>إجمالي المبلغ المسترجع للزبون:</span><span id="returns-list-total">0 د.ع</span></div>
+                    </div>
+                    <button class="btn-submit-all" style="background:#e60031;" onclick="finalizeReturnsInvoice()">إتمام وحفظ وطباعة وصل الاسترجاع 🖨️</button>
+                `;
+            }
+            else if (type === 'accounts') {
+                title.innerText = "دفاتر الحسابات التفصيلية والأرباح الموزعة";
+                let defaultDate = getSystemDate();
+                body.innerHTML = `
+                    <div class="account-box">
+                        <div class="account-box-header">
+                            <div class="account-box-title">💰 حسابات المبيعات والوصولات (المحل)</div>
+                            <span class="details-badge" id="acc-sales-badge-total">0 د.ع</span>
+                        </div>
+                        <div class="input-group">
+                            <label>📅 تاريخ الفلترة لحساب المبيعات:</label>
+                            <input type="date" id="acc-date-sales" class="custom-input" value="${defaultDate}" onchange="updateDetailedAccountField('sales')">
+                        </div>
+                        <div style="overflow-x:auto; margin-top:10px; background:#fafafa; border-radius:12px;">
+                            <table class="vertical-table" style="margin-top:0;">
+                                <thead><tr><th>رقم الوصل</th><th>الزبون</th><th>التوقيت</th><th>التفاصيل والمواد</th><th>المجموع</th></tr></thead>
+                                <tbody id="acc-table-sales-rows"></tbody>
+                            </table>
+                        </div>
+                        <button class="btn-submit-all" style="background:#0066eb; padding:10px; font-size:0.9rem;" onclick="printFullReportPage('sales', document.getElementById('acc-date-sales').value)">🖨️ طباعة ورقة حساب مبيعات محل</button>
+                    </div>
+
+                    <div class="account-box" style="border-color: #d8b4fe;">
+                        <div class="account-box-header">
+                            <div class="account-box-title">🌐 حسابات مبيعات الأونلاين والبيج</div>
+                            <span class="details-badge" id="acc-online-sales-badge-total" style="background:#f3e8ff; color:#7c3aed;">0 د.ع</span>
+                        </div>
+                        <div class="input-group">
+                            <label>📅 تاريخ الفلترة لحساب مبيعات الأونلاين:</label>
+                            <input type="date" id="acc-date-online-sales" class="custom-input" value="${defaultDate}" onchange="updateDetailedAccountField('online_sales')">
+                        </div>
+                        <div style="overflow-x:auto; margin-top:10px; background:#fafafa; border-radius:12px;">
+                            <table class="vertical-table" style="margin-top:0;">
+                                <thead><tr><th>رقم الوصل</th><th>الزبون</th><th>التوقيت</th><th>التفاصيل والمواد</th><th>المجموع</th></tr></thead>
+                                <tbody id="acc-table-online-sales-rows"></tbody>
+                            </table>
+                        </div>
+                        <button class="btn-submit-all" style="background:#7c3aed; padding:10px; font-size:0.9rem;" onclick="printFullReportPage('online_sales', document.getElementById('acc-date-online-sales').value)">🖨️ طباعة ورقة حساب مبيعات الأونلاين</button>
+                    </div>
+
+                    <div class="account-box">
+                        <div class="account-box-header">
+                            <div class="account-box-title">🛒 حسابات المشتريات وقوائم الموردين</div>
+                            <span class="details-badge" id="acc-purchases-badge-total" style="color:#ff5100;">0 د.ع</span>
+                        </div>
+                        <div class="input-group">
+                            <label>📅 تاريخ الفلترة لحساب المشتريات:</label>
+                            <input type="date" id="acc-date-purchases" class="custom-input" value="${defaultDate}" onchange="updateDetailedAccountField('purchases')">
+                        </div>
+                        <div style="overflow-x:auto; margin-top:10px; background:#fafafa; border-radius:12px;">
+                            <table class="vertical-table" style="margin-top:0;">
+                                <thead><tr><th>رقم القائمة</th><th>المورد</th><th>التوقيت</th><th>المواد الواردة</th><th>القيمة الكلية</th></tr></thead>
+                                <tbody id="acc-table-purchases-rows"></tbody>
+                            </table>
+                        </div>
+                        <button class="btn-submit-all" style="background:#ff5100; padding:10px; font-size:0.9rem;" onclick="printFullReportPage('purchases', document.getElementById('acc-date-purchases').value)">🖨️ طباعة ورقة حساب المشتريات للتاريخ المحدد</button>
+                    </div>
+
+                    <div class="account-box">
+                        <div class="account-box-header">
+                            <div class="account-box-title" style="color:#e60031;">🔄 حسابات بضاعة المرتجعات</div>
+                            <span class="details-badge" id="acc-returns-badge-total" style="background:#ffeef2; color:#e60031;">0 د.ع</span>
+                        </div>
+                        <div class="input-group">
+                            <label>📅 تاريخ الفلترة لحساب المرتجعات:</label>
+                            <input type="date" id="acc-date-returns" class="custom-input" value="${defaultDate}" onchange="updateDetailedAccountField('returns')">
+                        </div>
+                        <div style="overflow-x:auto; margin-top:10px; background:#fafafa; border-radius:12px;">
+                            <table class="vertical-table" style="margin-top:0;">
+                                <thead><tr><th>رقم الوصل</th><th>الزبون</th><th>التوقيت</th><th>المواد الراجعة</th><th>القيمة المالية</th></tr></thead>
+                                <tbody id="acc-table-returns-rows"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="account-box" id="acc-profits-box" style="border-color:#bbf7d0;">
+                        <div class="account-box-header">
+                            <div class="account-box-title" style="color:#16a34a;">📈 حسابات الأرباح الصافية المحققة (الشاملة)</div>
+                            <span class="details-badge" id="acc-profits-badge-total" style="background:#dcfce7; color:#16a34a;">+0 د.ع</span>
+                        </div>
+                        <div class="input-group">
+                            <label>📅 تاريخ الفلترة لحساب الأرباح النقدية:</label>
+                            <input type="date" id="acc-date-profits" class="custom-input" value="${defaultDate}" onchange="updateDetailedAccountField('profits')">
+                        </div>
+                        <div style="overflow-x:auto; margin-top:10px; background:#fafafa; border-radius:12px;">
+                            <table class="vertical-table" style="margin-top:0;">
+                                <thead><tr><th>رقم الفاتورة</th><th>النوع</th><th>حركة البيع للزبون</th><th>قيمة الوصل</th><th>الربح الصافي</th></tr></thead>
+                                <tbody id="acc-table-profits-rows"></tbody>
+                            </table>
+                        </div>
+                        <button class="btn-submit-all" style="background:#e60031; padding:10px; font-size:0.9rem;" onclick="printFullReportPage('profits', document.getElementById('acc-date-profits').value)">🖨️ طباعة ورقة حساب الأرباح للتاريخ المحدد</button>
+                    </div>
+                `;
+                setTimeout(() => {
+                    updateDetailedAccountField('sales');
+                    updateDetailedAccountField('online_sales');
+                    updateDetailedAccountField('purchases');
+                    updateDetailedAccountField('returns');
+                    updateDetailedAccountField('profits');
+                    if(currentUserSession && currentUserSession.role === 'accountant') {
+                        if(document.getElementById('acc-profits-box')) document.getElementById('acc-profits-box').style.display = 'none';
+                    }
+                }, 50);
+            }
+            else if (type === 'stock') {
+                title.innerText = "إدارة المخزن والجرود الحية البضاعة";
+                body.innerHTML = `
+                    <div class="input-group" style="margin-bottom:15px;">
+                        <label>🔍 ابحث باسم المادة في الرفوف والمخزن</label>
+                        <input type="text" id="stock-search-input" class="custom-input" placeholder="اكتب اسم المادة لفلترتها فوراً..." oninput="filterStockItems()">
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="vertical-table" id="stock-main-table">
+                            <thead><tr><th>اسم المادة</th><th>سعر الشراء</th><th>العدد المتوفر</th><th>إجراء</th></tr></thead>
+                            <tbody id="stock-table-rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="menu-summary" style="background:#f0fdf4; border:1px solid #bbf7d0; margin-top:20px;">
+                        <div class="summary-row" style="color:#16a34a; font-size:0.95rem;"><span>📦 مجموع قطع المواد بالمخزن:</span><span id="stock-total-qty">0 قطعة</span></div>
+                        <div class="summary-row" style="color:#16a34a; font-size:1.1rem; margin-top:5px; border-top:1px dashed #bbf7d0; padding-top:5px;"><span>💰 مجموع أسعار البضاعة (رأس المال):</span><span id="stock-total-value">0 د.ع</span></div>
+                    </div>
+                `;
+                renderStockTable(database.stock);
+            }
+            else if (type === 'reports') {
+                title.innerText = "سجل التقارير الحية والأوراق الرسمية التفصيلية";
+                body.innerHTML = `
+                    <div class="acc-tabs">
+                        <button class="acc-tab-btn active" id="rep-tab-sales" onclick="switchReportTab('sales')">📊 مبيعات المحل</button>
+                        <button class="acc-tab-btn" id="rep-tab-online_sales" onclick="switchReportTab('online_sales')">🌐 مبيعات أونلاين</button>
+                        <button class="acc-tab-btn" id="rep-tab-purchases" onclick="switchReportTab('purchases')">🛒 المشتريات</button>
+                        <button class="acc-tab-btn" id="rep-tab-returns" onclick="switchReportTab('returns')">🔄 المرتجعات</button>
+                        <button class="acc-tab-btn" id="rep-tab-items" onclick="switchReportTab('items')">📦 المخزن</button>
+                        <button class="acc-tab-btn" id="rep-tab-profits" onclick="switchReportTab('profits')">📈 الأرباح</button>
+                    </div>
+                    <div class="report-date-filter" id="date-filter-container">
+                        <div class="input-group" style="margin-bottom:0;">
+                            <label id="date-label">📅 حدد تاريخ التقرير المطلوب استخراجه:</label>
+                            <input type="date" id="report-filter-date" class="custom-input" value="${getSystemDate()}" onchange="processCurrentTabFilter()">
+                        </div>
+                    </div>
+                    <div id="report-tab-content"></div>
+                `;
+                switchReportTab('sales');
+            }
+            else if (type === 'settings') {
+                title.innerText = "إعدادات النظام وعناوين الفواتير والطباعة";
+                body.innerHTML = `
+                    <div class="account-box" style="border-color:#ced4da; margin-bottom:15px;">
+                        <div class="account-box-title" style="margin-bottom:10px;">📋 الهوية والبيانات الفنية</div>
+                        <div class="input-group">
+                            <label>🏬 اسم المحل / الشركة:</label>
+                            <input type="text" id="cfg-shop-name" class="custom-input" value="${shopSettings.name}">
+                        </div>
+                        <div class="input-group">
+                            <label>📞 رقم الهاتف للتواصل:</label>
+                            <input type="text" id="cfg-shop-phone" class="custom-input" value="${shopSettings.phone}">
+                        </div>
+                        <div class="input-group">
+                            <label>📍 العنوان الجغرافي أو الفرع الرئيسي:</label>
+                            <input type="text" id="cfg-shop-address" class="custom-input" value="${shopSettings.address}">
+                        </div>
+                        <div class="input-group">
+                            <label>🖼️ رفع شعار المحل / اللوجو:</label>
+                            <input type="file" id="cfg-shop-logo" class="custom-input" accept="image/*" onchange="processIncomingLogoFile(this)">
+                            <div class="logo-preview-container">
+                                <img id="cfg-preview-img" class="logo-preview" src="${shopSettings.logoData}" style="${shopSettings.logoData ? 'display:block;' : 'display:none;'}">
+                                <span id="cfg-preview-text" style="font-size:0.8rem; color:#3a3a3c; font-weight:bold;">اللوجو جاهز ومرتبط بالطباعة ✅</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="account-box" style="border-color:#3b42e6; margin-bottom:15px;">
+                        <div class="account-box-title" style="margin-bottom:10px; color:#3b42e6;">👥 إدارة حسابات الموظفين (المحاسب والمخزن)</div>
+                        <div class="input-group">
+                            <label>نوع صلاحية الموظف:</label>
+                            <select id="sub-role" class="custom-input">
+                                <option value="accountant">محاسب (Accountant) 💰</option>
+                                <option value="stockkeeper">أمين مخزن (Stockkeeper) 📦</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>البريد الإلكتروني للموظف:</label>
+                            <input type="email" id="sub-email" class="custom-input" placeholder="emp@system.com">
+                        </div>
+                        <div class="input-group">
+                            <label>كلمة مرور الموظف:</label>
+                            <input type="text" id="sub-pass" class="custom-input" placeholder="اكتب رمز الدخول الخاص به">
+                        </div>
+                        <button class="btn-add-item" style="background:#3b42e6; margin:5px 0;" onclick="addNewSubEmployeeAccount()">➕ تسجيل الحساب الفرعي للموظف</button>
+                        <div style="max-height:120px; overflow-y:auto; margin-top:10px; background:#f8f9fa; padding:8px; border-radius:10px;" id="sub-accounts-list"></div>
+                    </div>
+
+                    <div class="account-box" style="border-color:#a855f7;">
+                        <div class="account-box-title" style="margin-bottom:10px; color:#a855f7;">⏳ حقل وإدارة اشتراكات الترخيص المباشر</div>
+                        <div class="summary-row" style="font-size:0.9rem; color:#1c1c1e; margin-bottom:10px;">
+                            <span>تاريخ انتهاء الترخيص الحالي:</span>
+                            <span id="cfg-expiry-display" style="color:#7c3aed; font-weight:800;">...</span>
+                        </div>
+                        <div class="input-group">
+                            <label>تجديد وتمديد الصلاحية الفورية (أدخل المفتاح):</label>
+                            <input type="text" id="cfg-license-key" class="custom-input" placeholder="ACT-XXXX...">
+                        </div>
+                        <button class="btn-add-item" style="background:#a855f7; margin:5px 0;" onclick="activateKeyFromSettings()">⚡ تطبيق وتمديد اشتراك الترخيص</button>
+                    </div>
+
+                    <button class="btn-submit-all" style="background:#7c3aed; margin-top:15px;" onclick="saveShopConfigurationSettings()">💾 حفظ كل التغييرات المطبقة الحين</button>
+                `;
+                renderSubAccountsList();
+                let exp = localStorage.getItem('pos_expiry_date');
+                if(exp && document.getElementById('cfg-expiry-display')) document.getElementById('cfg-expiry-display').innerText = new Date(exp).toLocaleDateString('ar-IQ');
+            }
+        }
+
+        function renderSubAccountsList() {
+            let container = document.getElementById('sub-accounts-list');
+            if(!container) return;
+            let subAccounts = JSON.parse(localStorage.getItem('pos_sub_accounts') || "[]");
+            if(subAccounts.length === 0) {
+                container.innerHTML = `<p style="font-size:0.75rem; color:#8e8e93; text-align:center;">لا توجد حسابات فرعية مضافة حتى الآن</p>`;
+                return;
+            }
+            container.innerHTML = subAccounts.map((acc, index) => `
+                <div style="display:flex; justify-content:between; align-items:center; font-size:0.8rem; border-bottom:1px dashed #eee; padding:4px 0;">
+                    <span style="flex:1;"><b>[${acc.role === 'accountant'?'محاسب':'مخزن'}]</b> ${acc.email}</span>
+                    <button style="background:#ff3b30; color:white; border:none; padding:2px 6px; border-radius:6px; font-size:0.7rem; cursor:pointer;" onclick="deleteSubEmployeeAccount(${index})">حذف</button>
+                </div>
+            `).join('');
+        }
+
+        function addNewSubEmployeeAccount() {
+            const role = document.getElementById('sub-role').value;
+            const email = document.getElementById('sub-email').value.trim();
+            const pass = document.getElementById('sub-pass').value.trim();
+
+            if(!email || !pass) { alert("يرجى ملء كافة حقول الموظف!"); return; }
+            if(email === localStorage.getItem('pos_master_email')) { alert("لا يمكن استخدام البريد الإلكتروني للمدير الرئيسي كحساب فرعي!"); return; }
+
+            let subAccounts = JSON.parse(localStorage.getItem('pos_sub_accounts') || "[]");
+            if(subAccounts.some(x => x.email === email)) { alert("هذا البريد الإلكتروني مسجل لموظف آخر بالفعل!"); return; }
+
+            subAccounts.push({ role, email, pass });
+            localStorage.setItem('pos_sub_accounts', JSON.stringify(subAccounts));
+            
+            document.getElementById('sub-email').value = '';
+            document.getElementById('sub-pass').value = '';
+            renderSubAccountsList();
+            alert("تم إدراج وقفل الحساب الفرعي للموظف بنجاح.");
+        }
+
+        function deleteSubEmployeeAccount(index) {
+            let subAccounts = JSON.parse(localStorage.getItem('pos_sub_accounts') || "[]");
+            subAccounts.splice(index, 1);
+            localStorage.setItem('pos_sub_accounts', JSON.stringify(subAccounts));
+            renderSubAccountsList();
+        }
+
+        function activateKeyFromSettings() {
+            const key = document.getElementById('cfg-license-key').value.trim();
+            const licenseKeys = {
+                "ACT-30DAYS-9921": 30,
+                "ACT-180DAYS-4412": 180,
+                "ACT-365DAYS-7789": 365
+            };
+            if(licenseKeys[key]) {
+                let days = licenseKeys[key];
+                let currentExp = new Date(localStorage.getItem('pos_expiry_date') || new Date());
+                if (currentExp < new Date()) currentExp = new Date();
+                currentExp.setDate(currentExp.getDate() + days);
+                localStorage.setItem('pos_expiry_date', currentExp.toISOString());
+                if(document.getElementById('cfg-expiry-display')) document.getElementById('cfg-expiry-display').innerText = currentExp.toLocaleDateString('ar-IQ');
+                document.getElementById('cfg-license-key').value = '';
+                alert(`🎉 تم تحديث الاشتراك وتمديد الترخيص بنجاح لمدة ${days} يوم إضافي!`);
+            } else {
+                alert("❌ مفتاح الترخيص غير صالح!");
+            }
+        }
+
+        function closeMenu() {
+            if (html5QrcodeScanner) { try { html5QrcodeScanner.clear(); } catch(e){} }
+            document.getElementById('full-menu').style.display = 'none';
+            updateMainDashboardCards();
+        }
+
+        function processIncomingLogoFile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    shopSettings.logoData = e.target.result;
+                    const previewImg = document.getElementById('cfg-preview-img');
+                    if (previewImg) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
+                    }
+                    const previewText = document.getElementById('cfg-preview-text');
+                    if (previewText) previewText.innerText = "تم قراءة اللوجو الجديد، لا تنسَ الضغط على زر الحفظ بالأسفل لتعميمه 🛠️";
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveShopConfigurationSettings() {
+            const nameField = document.getElementById('cfg-shop-name').value.trim();
+            const phoneField = document.getElementById('cfg-shop-phone').value.trim();
+            const addressField = document.getElementById('cfg-shop-address').value.trim();
+
+            if (!nameField) { alert("يجب كتابة اسم المحل على الأقل لتجهيز ترويسة الورقة!"); return; }
+
+            shopSettings.name = nameField;
+            shopSettings.phone = phoneField;
+            shopSettings.address = addressField;
+
+            document.getElementById('val-settings-status').innerText = nameField + " ⚙️";
+            alert("تم تحديث وحفظ هوية وعناوين المحل بشكل كامل.");
+            closeMenu();
+        }
+
+        function updateDetailedAccountField(field) {
+            let today = getSystemDate();
+            if (field === 'sales') {
+                let inputElement = document.getElementById('acc-date-sales');
+                let targetDate = inputElement ? inputElement.value : today;
+                let filtered = database.sales.filter(s => s.date === targetDate);
+                let total = filtered.reduce((sum, i) => sum + i.total, 0);
+                if(document.getElementById('acc-sales-badge-total')) document.getElementById('acc-sales-badge-total').innerText = total.toLocaleString() + " د.ع";
+                let tbody = document.getElementById('acc-table-sales-rows');
+                if(tbody) {
+                    if (filtered.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#8e8e93;">لا توجد مبيعات في هذا التاريخ</td></tr>`;
+                    } else {
+                        tbody.innerHTML = filtered.map(s => `
+                            <tr onclick="showInvoiceDetails('sales', '${s.id}')" style="cursor:pointer;">
+                                <td><b>${s.id}</b></td>
+                                <td>${s.customer}</td>
+                                <td>${s.time}</td>
+                                <td><span style="font-size:0.75rem; color:#555;">${s.items.map(i=>`${i.name}(${i.qty})`).join(', ')}</span></td>
+                                <td style="color:#0066eb;">${s.total.toLocaleString()} د.ع</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }
+            else if (field === 'online_sales') {
+                let inputElement = document.getElementById('acc-date-online-sales');
+                let targetDate = inputElement ? inputElement.value : today;
+                let filtered = database.online_sales.filter(s => s.date === targetDate);
+                let total = filtered.reduce((sum, i) => sum + i.total, 0);
+                if(document.getElementById('acc-online-sales-badge-total')) document.getElementById('acc-online-sales-badge-total').innerText = total.toLocaleString() + " د.ع";
+                let tbody = document.getElementById('acc-table-online-sales-rows');
+                if(tbody) {
+                    if (filtered.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#8e8e93;">لا توجد مبيعات أونلاين في هذا التاريخ</td></tr>`;
+                    } else {
+                        tbody.innerHTML = filtered.map(s => `
+                            <tr onclick="showInvoiceDetails('online_sales', '${s.id}')" style="cursor:pointer;">
+                                <td><b>${s.id}</b></td>
+                                <td>${s.customer}</td>
+                                <td>${s.time}</td>
+                                <td><span style="font-size:0.75rem; color:#555;">${s.items.map(i=>`${i.name}(${i.qty})`).join(', ')}</span></td>
+                                <td style="color:#7c3aed;">${s.total.toLocaleString()} د.ع</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }
+            else if (field === 'purchases') {
+                let inputElement = document.getElementById('acc-date-purchases');
+                let targetDate = inputElement ? inputElement.value : today;
+                let filtered = database.purchases.filter(p => p.date === targetDate);
+                let total = filtered.reduce((sum, i) => sum + i.total, 0);
+                if(document.getElementById('acc-purchases-badge-total')) document.getElementById('acc-purchases-badge-total').innerText = total.toLocaleString() + " د.ع";
+                let tbody = document.getElementById('acc-table-purchases-rows');
+                if(tbody) {
+                    if (filtered.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#8e8e93;">لا توجد مشتريات في هذا التاريخ</td></tr>`;
+                    } else {
+                        tbody.innerHTML = filtered.map(p => `
+                            <tr onclick="showInvoiceDetails('purchases', '${p.id}')" style="cursor:pointer;">
+                                <td><b>${p.id}</b></td>
+                                <td>${p.supplier}</td>
+                                <td>${p.time}</td>
+                                <td><span style="font-size:0.75rem; color:#555;">${p.items.map(i=>`${i.name}(${i.qty})`).join(', ')}</span></td>
+                                <td style="color:#ff5100;">${p.total.toLocaleString()} د.ع</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }
+            else if (field === 'returns') {
+                let inputElement = document.getElementById('acc-date-returns');
+                let targetDate = inputElement ? inputElement.value : today;
+                let filtered = database.returns.filter(r => r.date === targetDate);
+                let total = filtered.reduce((sum, i) => sum + i.total, 0);
+                if(document.getElementById('acc-returns-badge-total')) document.getElementById('acc-returns-badge-total').innerText = total.toLocaleString() + " د.ع";
+                let tbody = document.getElementById('acc-table-returns-rows');
+                if(tbody) {
+                    if (filtered.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#8e8e93;">لا توجد مرتجعات في هذا التاريخ</td></tr>`;
+                    } else {
+                        tbody.innerHTML = filtered.map(r => `
+                            <tr onclick="showInvoiceDetails('returns', '${r.id}')" style="cursor:pointer;">
+                                <td><b>${r.id}</b></td>
+                                <td>${r.customer}</td>
+                                <td>${r.time}</td>
+                                <td><span style="font-size:0.75rem; color:#555;">${r.items.map(i=>`${i.name}(${i.qty})`).join(', ')}</span></td>
+                                <td style="color:#e60031;">${r.total.toLocaleString()} د.ع</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            }
+            else if (field === 'profits') {
+                let inputElement = document.getElementById('acc-date-profits');
+                let targetDate = inputElement ? inputElement.value : today;
+                let filteredSales = database.sales.filter(s => s.date === targetDate);
+                let filteredOnline = database.online_sales.filter(s => s.date === targetDate);
+                
+                let totalProfit = filteredSales.reduce((sum, i) => sum + i.profit, 0) + filteredOnline.reduce((sum, i) => sum + i.profit, 0);
+                if(document.getElementById('acc-profits-badge-total')) document.getElementById('acc-profits-badge-total').innerText = "+" + totalProfit.toLocaleString() + " د.ع";
+                let tbody = document.getElementById('acc-table-profits-rows');
+                
+                if(tbody) {
+                    if (filteredSales.length === 0 && filteredOnline.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:15px; color:#8e8e93;">لا توجد أرباح محتسبة</td></tr>`;
+                    } else {
+                        let html = filteredSales.map(s => `
+                            <tr>
+                                <td><b>${s.id}</b></td>
+                                <td><span style="color:#0066eb;">محل 🏪</span></td>
+                                <td>قائمة بيع لـ ${s.customer}</td>
+                                <td>${s.total.toLocaleString()} د.ع</td>
+                                <td style="color:#2ecc71;">+${s.profit.toLocaleString()} د.ع</td>
+                            </tr>
+                        `).join('');
+                        
+                        html += filteredOnline.map(s => `
+                            <tr>
+                                <td><b>${s.id}</b></td>
+                                <td><span style="color:#7c3aed;">أونلاين 🌐</span></td>
+                                <td>قائمة بيع لـ ${s.customer}</td>
+                                <td>${s.total.toLocaleString()} د.ع</td>
+                                <td style="color:#2ecc71;">+${s.profit.toLocaleString()} د.ع</td>
+                            </tr>
+                        `).join('');
+                        tbody.innerHTML = html;
+                    }
+                }
+            }
+        }
+
+        let activeTab = 'sales';
+
+        function switchReportTab(tabType) {
+            activeTab = tabType;
+            document.querySelectorAll('.acc-tab-btn').forEach(btn => btn.classList.remove('active'));
+            if(document.getElementById(`rep-tab-${tabType}`)) document.getElementById(`rep-tab-${tabType}`).classList.add('active');
+
+            const filterContainer = document.getElementById('date-filter-container');
+            if (filterContainer) {
+                if (tabType === 'items') {
+                    filterContainer.style.display = 'none';
+                } else {
+                    filterContainer.style.display = 'block';
+                }
+            }
+            processCurrentTabFilter();
+        }
+
+        function processCurrentTabFilter() {
+            const selectedDate = document.getElementById('report-filter-date') ? document.getElementById('report-filter-date').value : getSystemDate();
+            const contentArea = document.getElementById('report-tab-content');
+            if(!contentArea) return;
+
+            if (activeTab === 'sales') {
+                let filteredSales = database.sales.filter(s => s.date === selectedDate);
+                let total = filteredSales.reduce((sum, i) => sum + i.total, 0);
+                contentArea.innerHTML = `
+                    <div class="menu-summary" style="background:#f0f4ff; border:1px solid #d5e2f9; color:#1c1c1e; margin-top:0; margin-bottom:15px;">
+                        <div class="summary-row" style="font-size:1rem;"><span>إجمالي مبيعات المحل تاريخ (${selectedDate}):</span><span style="color:#0066eb;">${total.toLocaleString()} د.ع</span></div>
+                    </div>
+                    <div class="report-section-title">📄 فواتير الكاشير المسجلة:</div>
+                    <div id="filtered-invoices-list">${renderInvoicesMiniCards(filteredSales, 'sales')}</div>
+                    <button class="btn-submit-all" style="background:#0066eb;" onclick="printFullReportPage('sales', '${selectedDate}')">🖨️ طباعة تقرير مبيعات محل PDF</button>
+                `;
+            } 
+            else if (activeTab === 'online_sales') {
+                let filteredOnline = database.online_sales.filter(s => s.date === selectedDate);
+                let total = filteredOnline.reduce((sum, i) => sum + i.total, 0);
+                contentArea.innerHTML = `
+                    <div class="menu-summary" style="background:#faf5ff; border:1px solid #e9d5ff; color:#1c1c1e; margin-top:0; margin-bottom:15px;">
+                        <div class="summary-row" style="font-size:1rem;"><span>إجمالي مبيعات أونلاين تاريخ (${selectedDate}):</span><span style="color:#7c3aed;">${total.toLocaleString()} د.ع</span></div>
+                    </div>
+                    <div class="report-section-title">📄 فواتير الأونلاين المسجلة:</div>
+                    <div id="filtered-invoices-list">${renderInvoicesMiniCards(filteredOnline, 'online_sales')}</div>
+                    <button class="btn-submit-all" style="background:#7c3aed;" onclick="printFullReportPage('online_sales', '${selectedDate}')">🖨️ طباعة تقرير مبيعات الأونلاين PDF</button>
+                `;
+            }
+            else if (activeTab === 'purchases') {
+                let filteredPurchases = database.purchases.filter(p => p.date === selectedDate);
+                let total = filteredPurchases.reduce((sum, i) => sum + i.total, 0);
+                contentArea.innerHTML = `
+                    <div class="menu-summary" style="background:#fff5f0; border:1px solid #ffe2d4; color:#1c1c1e; margin-top:0; margin-bottom:15px;">
+                        <div class="summary-row" style="font-size:1rem;"><span>إجمالي مشتريات تاريخ (${selectedDate}):</span><span style="color:#ff5100;">${total.toLocaleString()} د.ع</span></div>
+                    </div>
+                    <div class="report-section-title">📄 قوائم الشراء المسجلة في هذا التاريخ:</div>
+                    <div id="filtered-invoices-list">${renderInvoicesMiniCards(filteredPurchases, 'purchases')}</div>
+                    <button class="btn-submit-all" style="background:#ff5100;" onclick="printFullReportPage('purchases', '${selectedDate}')">🖨️ طباعة تقرير مشتريات مفصل PDF</button>
+                `;
+            }
+            else if (activeTab === 'returns') {
+                let filteredReturns = database.returns.filter(r => r.date === selectedDate);
+                let total = filteredReturns.reduce((sum, i) => sum + i.total, 0);
+                contentArea.innerHTML = `
+                    <div class="menu-summary" style="background:#fff5f6; border:1px solid #ffd4dc; color:#1c1c1e; margin-top:0; margin-bottom:15px;">
+                        <div class="summary-row" style="font-size:1rem;"><span>إجمالي المرتجعات تاريخ (${selectedDate}):</span><span style="color:#e60031;">${total.toLocaleString()} د.ع</span></div>
+                    </div>
+                    <div class="report-section-title">📄 وصولات الاسترجاع المسجلة في هذا التاريخ:</div>
+                    <div id="filtered-invoices-list">${renderInvoicesMiniCards(filteredReturns, 'returns')}</div>
+                `;
+            }
+            else if (activeTab === 'items') {
+                contentArea.innerHTML = `
+                    <div class="report-section-title">📦 حالة بضاعة الرفوف والمخزن الحالية:</div>
+                    <div style="overflow-x:auto; background:#fff; border:1px solid #e5e5ea; border-radius:12px; padding:5px;">
+                        <table class="vertical-table" style="margin-top:0;">
+                            <thead><tr><th>اسم المادة</th><th>التكلفة</th><th>الكمية الحالية</th><th>إجمالي التكلفة</th></tr></thead>
+                            <tbody>
+                                ${database.stock.length === 0 ? `<tr><td colspan="4" style="text-align:center; color:#8e8e93;">المخزن لا يحتوي بضائع حالياً</td></tr>` : 
+                                  database.stock.map(i => `<tr><td><b>${i.name}</b></td><td>${i.cost.toLocaleString()}</td><td>${i.qty} قطعة</td><td> ${(i.cost * i.qty).toLocaleString()} د.ع</td></tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn-submit-all" style="background:#2ecc71;" onclick="printFullReportPage('items', '')">🖨️ طباعة ورقة جرد المخزن التفصيلية الكاملة PDF</button>
+                `;
+            }
+            else if (activeTab === 'profits') {
+                let filteredSales = database.sales.filter(s => s.date === selectedDate);
+                let filteredOnline = database.online_sales.filter(s => s.date === selectedDate);
+                let totalProfit = filteredSales.reduce((sum, i) => sum + i.profit, 0) + filteredOnline.reduce((sum, i) => sum + i.profit, 0);
+                contentArea.innerHTML = `
+                    <div class="menu-summary" style="background:#fffbfa; border:1px solid #ffe8e1; color:#1c1c1e; margin-top:0;">
+                        <div class="report-section-title" style="color:#e60031; margin-top:0;">📈 الأرباح الصافية المحققة بتاريخ (${selectedDate}):</div>
+                        <div class="summary-row" style="font-size:1.4rem; padding:10px 0; color:#2ecc71;"><span>صافي الربح الفعلي:</span><span>+${totalProfit.toLocaleString()} د.ع</span></div>
+                    </div>
+                    <button class="btn-submit-all" style="background:#e60031;" onclick="printFullReportPage('profits', '${selectedDate}')">🖨️ طباعة ورقة تقرير الأرباح الشاملة PDF</button>
+                `;
+            }
+        }
+
+        function renderInvoicesMiniCards(list, type = 'sales') {
+            if (list.length === 0) return `<p style="font-size:0.85rem; color:#8e8e93; text-align:center; padding:15px 0;">لا توجد حركة مسجلة لهذا التاريخ المحدد.</p>`;
+            return list.map(inv => {
+                let color = type === 'sales' ? '#0066eb' : (type === 'online_sales' ? '#7c3aed' : (type === 'purchases' ? '#ff5100' : '#e60031'));
+                let name = type === 'purchases' ? inv.supplier : inv.customer;
+                return `
+                    <div class="mini-invoice-card" onclick="showInvoiceDetails('${type}', '${inv.id}')">
+                        <div class="invoice-info"><span class="inv-id">${inv.id} | ${name}</span><span class="inv-time">🕒 ${inv.time}</span></div>
+                        <div class="inv-amount" style="color:${color};">${inv.total.toLocaleString()} د.ع</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showInvoiceDetails(type, id) {
+            let list = [];
+            if(type === 'sales') list = database.sales;
+            else if(type === 'online_sales') list = database.online_sales;
+            else if(type === 'purchases') list = database.purchases;
+            else if(type === 'returns') list = database.returns;
+
+            let inv = list.find(x => x.id === id);
+            if(!inv) return;
+
+            document.getElementById('modal-invoice-title').innerText = "تفاصيل فاتورة " + id;
+            let itemsHtml = inv.items.map(i => `
+                <div class="modal-row">
+                    <span>${i.name} (×${i.qty})</span>
+                    <span>${i.total.toLocaleString()} د.ع</span>
+                </div>
+            `).join('');
+            itemsHtml += `
+                <div class="modal-row" style="border-top:2px solid #1c1c1e; margin-top:10px; color:#e60031;">
+                    <span>المجموع الصافي:</span>
+                    <span>${inv.total.toLocaleString()} د.ع</span>
+                </div>
+            `;
+            document.getElementById('modal-invoice-items').innerHTML = itemsHtml;
+            document.getElementById('invoice-modal').style.display = 'flex';
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoice-modal').style.display = 'none';
+        }
+
+        function renderStockTable(items) {
+            let tbody = document.getElementById('stock-table-rows');
+            if(!tbody) return;
+            if(items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#8e8e93; padding:20px;">المخزن فارغ حالياً</td></tr>`;
+                if(document.getElementById('stock-total-qty')) document.getElementById('stock-total-qty').innerText = "0 قطعة";
+                if(document.getElementById('stock-total-value')) document.getElementById('stock-total-value').innerText = "0 د.ع";
+                return;
+            }
+            tbody.innerHTML = items.map(i => `
+                <tr>
+                    <td><b>${i.name}</b></td>
+                    <td>${i.cost.toLocaleString()} د.ع</td>
+                    <td>${i.qty} قطعة</td>
+                    <td><button class="btn-action-edit" onclick="alert('المادة جاهزة وحية بالمخزن')">نشط</button></td>
+                </tr>
+            `).join('');
+
+            let tQty = items.reduce((sum, i) => sum + i.qty, 0);
+            let tVal = items.reduce((sum, i) => sum + (i.cost * i.qty), 0);
+            if(document.getElementById('stock-total-qty')) document.getElementById('stock-total-qty').innerText = tQty + " قطعة";
+            if(document.getElementById('stock-total-value')) document.getElementById('stock-total-value').innerText = tVal.toLocaleString() + " د.ع";
+        }
+
+        function filterStockItems() {
+            let val = document.getElementById('stock-search-input').value.toLowerCase().trim();
+            let filtered = database.stock.filter(x => x.name.toLowerCase().includes(val));
+            renderStockTable(filtered);
+        }
+
+        function toggleCameraScanner(target) {
+            const container = document.getElementById('scanner-container');
+            if (container.style.display === 'block') {
+                container.style.display = 'none';
+                if (html5QrcodeScanner) html5QrcodeScanner.clear();
+            } else {
+                container.style.display = 'block';
+                html5QrcodeScanner = new Html5QrcodeScanner("scanner-container", { fps: 15, qrbox: 250 });
+                html5QrcodeScanner.render((decodedText) => {
+                    if (target === 'sales') {
+                        document.getElementById('s-barcode').value = decodedText;
+                        document.getElementById('s-item-name').value = "منتج باركود: " + decodedText;
+                        document.getElementById('s-price').value = 5000; 
+                    } else if (target === 'online_sales') {
+                        document.getElementById('on-barcode').value = decodedText;
+                        document.getElementById('on-item-name').value = "منتج باركود: " + decodedText;
+                        document.getElementById('on-price').value = 5000; 
+                    } else if (target === 'returns') {
+                        document.getElementById('r-barcode').value = decodedText;
+                        document.getElementById('r-item-name').value = "مرتجع باركود: " + decodedText;
+                        document.getElementById('r-price').value = 5000;
+                    } else {
+                        document.getElementById('p-barcode').value = decodedText;
+                        document.getElementById('p-item-name').value = "منتج شراء باركود: " + decodedText;
+                    }
+                    html5QrcodeScanner.clear();
+                    container.style.display = 'none';
+                });
+            }
+        }
+
+        function handleManualBarcode(e) {
+            if (e.key === 'Enter') {
+                const bInput = document.getElementById('s-barcode');
+                if(bInput && bInput.value.trim() !== "") {
+                    document.getElementById('s-item-name').value = "منتج باركود " + bInput.value;
+                    document.getElementById('s-price').value = 4000; 
+                    document.getElementById('s-qty').focus();
+                }
+            }
+        }
+
+        function handleOnlineManualBarcode(e) {
+            if (e.key === 'Enter') {
+                const bInput = document.getElementById('on-barcode');
+                if(bInput && bInput.value.trim() !== "") {
+                    document.getElementById('on-item-name').value = "منتج باركود " + bInput.value;
+                    document.getElementById('on-price').value = 4000; 
+                    document.getElementById('on-qty').focus();
+                }
+            }
+        }
+
+        function handleReturnManualBarcode(e) {
+            if (e.key === 'Enter') {
+                const bInput = document.getElementById('r-barcode');
+                if(bInput && bInput.value.trim() !== "") {
+                    document.getElementById('r-item-name').value = "مرتجع باركود " + bInput.value;
+                    document.getElementById('r-price').value = 4000; 
+                    document.getElementById('r-qty').focus();
+                }
+            }
+        }
+
+        function addItemToPurchaseList() {
+            const name = document.getElementById('p-item-name').value.trim();
+            const barcode = document.getElementById('p-barcode').value.trim();
+            const cost = parseFloat(document.getElementById('p-cost').value) || 0;
+            const qty = parseInt(document.getElementById('p-qty').value) || 0;
+            const sell = parseFloat(document.getElementById('p-sell-price').value) || 0;
+
+            if (!name || qty <= 0 || cost <= 0) { alert("يرجى ملء الحقول بشكل صحيح!"); return; }
+
+            purchaseCart.push({ name, barcode, cost, qty, sell, total: cost * qty });
+            document.getElementById('p-item-name').value=''; document.getElementById('p-barcode').value=''; document.getElementById('p-cost').value=''; document.getElementById('p-qty').value=''; document.getElementById('p-sell-price').value='';
+            
+            let totalSum = purchaseCart.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('purchase-table-rows').innerHTML = purchaseCart.map(i => `<tr><td>${i.name}</td><td>${i.cost.toLocaleString()}</td><td>${i.qty}</td><td>${i.total.toLocaleString()} د.ع</td></tr>`).join('');
+            document.getElementById('purchase-list-total').innerText = totalSum.toLocaleString() + " د.ع";
+        }
+
+        function finalizePurchaseInvoice() {
+            if (purchaseCart.length === 0) { alert("القائمة فارغة!"); return; }
+            const supplier = document.getElementById('p-customer').value || "مورد غير محدد";
+            const invNum = document.getElementById('p-invoice-num').value || currentPurchaseInvoiceNum;
+            let finalSum = purchaseCart.reduce((sum, item) => sum + item.total, 0);
+
+            database.purchases.push({
+                id: "P-" + invNum, date: getSystemDate(), time: getSystemTime(), supplier: supplier, total: finalSum, items: [...purchaseCart]
+            });
+
+            purchaseCart.forEach(pItem => {
+                const existing = database.stock.find(s => s.name.toLowerCase() === pItem.name.toLowerCase());
+                if (existing) {
+                    existing.qty += pItem.qty;
+                    existing.cost = pItem.cost;
+                } else {
+                    database.stock.push({ name: pItem.name, barcode: pItem.barcode, cost: pItem.cost, qty: pItem.qty });
+                }
+            });
+
+            currentPurchaseInvoiceNum++;
+            alert("تم حفظ قائمة المشتريات بنجاح وإرسال البضاعة للمخزن.");
+            openMenu('accounts');
+        }
+
+        function addItemToSalesList() {
+            const name = document.getElementById('s-item-name').value.trim();
+            const barcode = document.getElementById('s-barcode').value.trim();
+            const price = parseFloat(document.getElementById('s-price').value) || 0;
+            const qty = parseInt(document.getElementById('s-qty').value) || 0;
+            const discount = parseFloat(document.getElementById('s-discount').value) || 0;
+
+            if (!name || qty <= 0 || price <= 0) { alert("يرجى ملء الحقول مادة كاشير!"); return; }
+
+            let itemTotal = (price * qty) - discount;
+            const stockMatch = database.stock.find(s => s.name.toLowerCase() === name.toLowerCase());
+            let itemCost = stockMatch ? stockMatch.cost : price * 0.7; 
+            let itemProfit = itemTotal - (itemCost * qty);
+
+            salesCart.push({ name, barcode, price, qty, discount, total: itemTotal, profit: itemProfit });
+            document.getElementById('s-item-name').value=''; document.getElementById('s-barcode').value=''; document.getElementById('s-price').value=''; document.getElementById('s-qty').value='1'; document.getElementById('s-discount').value='0';
+
+            let totalSum = salesCart.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('sales-table-rows').innerHTML = salesCart.map(i => `<tr><td>${i.name}</td><td>${i.price.toLocaleString()}</td><td>${i.qty}</td><td>${i.discount}</td><td>${i.total.toLocaleString()} د.ع</td></tr>`).join('');
+            document.getElementById('sales-list-total').innerText = totalSum.toLocaleString() + " د.ع";
+        }
+
+        function finalizeSalesInvoice() {
+            if (salesCart.length === 0) { alert("السلة فارغة!"); return; }
+            const customer = document.getElementById('s-customer').value || "زبون نقدي";
+            let finalSum = salesCart.reduce((sum, item) => sum + item.total, 0);
+            let finalProfit = salesCart.reduce((sum, item) => sum + item.profit, 0);
+
+            let salesInvoice = {
+                id: "S-" + currentSalesInvoiceNum, date: getSystemDate(), time: getSystemTime(), customer: customer, total: finalSum, profit: finalProfit, items: [...salesCart]
+            };
+            database.sales.push(salesInvoice);
+
+            salesCart.forEach(sItem => {
+                const stockItem = database.stock.find(s => s.name.toLowerCase() === sItem.name.toLowerCase());
+                if(stockItem) {
+                    stockItem.qty = Math.max(0, stockItem.qty - sItem.qty);
+                }
+            });
+
+            printSalesReceiptPaper(salesInvoice, 'فاتورة بيع نقدي');
+            currentSalesInvoiceNum++;
+            alert("تم إتمام وحفظ وصل المبيعات بنجاح.");
+            openMenu('accounts');
+        }
+
+        function addItemToOnlineSalesList() {
+            const name = document.getElementById('on-item-name').value.trim();
+            const barcode = document.getElementById('on-barcode').value.trim();
+            const price = parseFloat(document.getElementById('on-price').value) || 0;
+            const qty = parseInt(document.getElementById('on-qty').value) || 0;
+            const discount = parseFloat(document.getElementById('on-discount').value) || 0;
+
+            if (!name || qty <= 0 || price <= 0) { alert("يرجى ملء حقول الأونلاين بشكل صحيح!"); return; }
+
+            let itemTotal = (price * qty) - discount;
+            const stockMatch = database.stock.find(s => s.name.toLowerCase() === name.toLowerCase());
+            let itemCost = stockMatch ? stockMatch.cost : price * 0.7; 
+            let itemProfit = itemTotal - (itemCost * qty);
+
+            onlineSalesCart.push({ name, barcode, price, qty, discount, total: itemTotal, profit: itemProfit });
+            document.getElementById('on-item-name').value=''; document.getElementById('on-barcode').value=''; document.getElementById('on-price').value=''; document.getElementById('on-qty').value='1'; document.getElementById('on-discount').value='0';
+
+            let totalSum = onlineSalesCart.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('online-sales-table-rows').innerHTML = onlineSalesCart.map(i => `<tr><td>${i.name}</td><td>${i.price.toLocaleString()}</td><td>${i.qty}</td><td>${i.discount}</td><td>${i.total.toLocaleString()} د.ع</td></tr>`).join('');
+            document.getElementById('online-sales-list-total').innerText = totalSum.toLocaleString() + " د.ع";
+        }
+
+        function finalizeOnlineSalesInvoice() {
+            if (onlineSalesCart.length === 0) { alert("قائمة الأونلاين فارغة!"); return; }
+            const customer = document.getElementById('on-customer').value || "زبون أونلاين";
+            let finalSum = onlineSalesCart.reduce((sum, item) => sum + item.total, 0);
+            let finalProfit = onlineSalesCart.reduce((sum, item) => sum + item.profit, 0);
+
+            let onlineInvoice = {
+                id: "ON-" + currentOnlineSalesInvoiceNum, date: getSystemDate(), time: getSystemTime(), customer: customer, total: finalSum, profit: finalProfit, items: [...onlineSalesCart]
+            };
+            database.online_sales.push(onlineInvoice);
+
+            onlineSalesCart.forEach(sItem => {
+                const stockItem = database.stock.find(s => s.name.toLowerCase() === sItem.name.toLowerCase());
+                if(stockItem) {
+                    stockItem.qty = Math.max(0, stockItem.qty - sItem.qty);
+                }
+            });
+
+            printSalesReceiptPaper(onlineInvoice, 'فاتورة طلبية أونلاين 🌐');
+            currentOnlineSalesInvoiceNum++;
+            alert("تم إتمام وحفظ وصل الأونلاين بنجاح.");
+            openMenu('accounts');
+        }
+
+        function printSalesReceiptPaper(receipt, titleName) {
+            let printWindow = window.open('', '_blank', 'width=450,height=600');
+            let logoImageHtml = shopSettings.logoData ? `<img src="${shopSettings.logoData}" style="max-height:65px; max-width:150px; object-fit:contain; margin-bottom:5px;"><br>` : '';
+            let themeColor = receipt.id.startsWith('ON-') ? '#7c3aed' : '#0066eb';
+            
+            let htmlDoc = `
+            <html dir="rtl" lang="ar">
+            <head>
+                <meta charset="UTF-8">
+                <title>${titleName}</title>
+                <style>
+                    body { font-family: 'Tajawal', sans-serif, Arial; padding: 15px; color: #111; text-align: center; font-size: 13px; }
+                    .receipt-box { width: 100%; border: 1px dashed #000; padding: 10px; border-radius: 5px; }
+                    .title { font-size: 19px; font-weight: bold; margin-bottom: 3px; }
+                    .subtitle { font-size: 11px; margin-bottom: 12px; border-bottom: 1px solid #000; padding-bottom: 8px; line-height:1.4; text-align:right;}
+                    .info-line { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px; }
+                    .items-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; }
+                    .items-table th { border-bottom: 2px solid #000; padding: 6px 4px; text-align: right; font-size:12px; }
+                    .items-table td { border-bottom: 1px dashed #ddd; padding: 6px 4px; text-align: right; font-weight: bold; }
+                    .total-box { border-top: 2px solid #000; padding-top: 8px; font-size: 15px; font-weight: bold; display: flex; justify-content: space-between; color: ${themeColor}; }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-box">
+                    ${logoImageHtml}
+                    <div class="title">${shopSettings.name}</div>
+                    <div class="subtitle">
+                        📍 العنوان: ${shopSettings.address}<br>
+                        📞 الهاتف: ${shopSettings.phone}
+                    </div>
+                    <table class="items-table">
+                        <thead><tr><th>اسم المادة</th><th>العدد</th><th>المجموع</th></tr></thead>
+                        <tbody>
+                            ${receipt.items.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.total.toLocaleString()} د.ع</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <div class="total-box"><span>المجموع الصافي:</span><span>${receipt.total.toLocaleString()} د.ع</span></div>
+                </div>
+                <script>window.onload = function() { window.print(); window.close(); }</s` + `cript>
+            </body>
+            </html>`;
+            printWindow.document.write(htmlDoc);
+            printWindow.document.close();
+        }
+
+        function addItemToReturnsList() {
+            const name = document.getElementById('r-item-name').value.trim();
+            const barcode = document.getElementById('r-barcode').value.trim();
+            const price = parseFloat(document.getElementById('r-price').value) || 0;
+            const qty = parseInt(document.getElementById('r-qty').value) || 0;
+
+            if (!name || qty <= 0 || price <= 0) { alert("يرجى ملء حقول الاسترجاع بشكل صحيح!"); return; }
+
+            let itemTotal = price * qty;
+            returnsCart.push({ name, barcode, price, qty, total: itemTotal });
+            
+            document.getElementById('r-item-name').value=''; document.getElementById('r-barcode').value=''; document.getElementById('r-price').value=''; document.getElementById('r-qty').value='1';
+
+            let totalSum = returnsCart.reduce((sum, item) => sum + item.total, 0);
+            document.getElementById('returns-table-rows').innerHTML = returnsCart.map(i => `<tr><td>${i.name}</td><td>${i.price.toLocaleString()}</td><td>${i.qty}</td><td>${i.total.toLocaleString()} د.ع</td></tr>`).join('');
+            document.getElementById('returns-list-total').innerText = totalSum.toLocaleString() + " د.ع";
+        }
+
+        function finalizeReturnsInvoice() {
+            if (returnsCart.length === 0) { alert("سلة المرتجعات فارغة!"); return; }
+            const customer = document.getElementById('r-customer').value || "زبون نقدي";
+            let finalSum = returnsCart.reduce((sum, item) => sum + item.total, 0);
+
+            let returnInvoice = {
+                id: "R-" + currentReturnInvoiceNum, date: getSystemDate(), time: getSystemTime(), customer: customer, total: finalSum, items: [...returnsCart]
+            };
+            database.returns.push(returnInvoice);
+
+            returnsCart.forEach(rItem => {
+                const stockItem = database.stock.find(s => s.name.toLowerCase() === rItem.name.toLowerCase());
+                if (stockItem) {
+                    stockItem.qty += rItem.qty;
+                } else {
+                    database.stock.push({ name: rItem.name, barcode: rItem.barcode, cost: rItem.price * 0.7, qty: rItem.qty });
+                }
+            });
+
+            printReturnReceiptPaper(returnInvoice);
+            currentReturnInvoiceNum++;
+            alert("تم تسجيل المرتجعات بنجاح، وزيادة بضاعة المخزن.");
+            openMenu('accounts');
+        }
+
+        function printReturnReceiptPaper(receipt) {
+            let printWindow = window.open('', '_blank', 'width=450,height=600');
+            let logoImageHtml = shopSettings.logoData ? `<img src="${shopSettings.logoData}" style="max-height:65px; max-width:150px; object-fit:contain; margin-bottom:5px;"><br>` : '';
+            
+            let htmlDoc = `
+            <html dir="rtl" lang="ar">
+            <head>
+                <meta charset="UTF-8">
+                <title>وصل مرتجعات</title>
+                <style>
+                    body { font-family: 'Tajawal', Arial; padding: 15px; text-align: center; }
+                    .box { border: 1px dashed red; padding: 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="box">
+                    ${logoImageHtml}
+                    <h3>وصل استرجاع بضاعة رسمي</h3>
+                    <p>رقم الإيصال: ${receipt.id}</p>
+                    <p>المجموع المسترجع: ${receipt.total.toLocaleString()} د.ع</p>
+                </div>
+                <script>window.onload = function() { window.print(); window.close(); }</s` + `cript>
+            </body>
+            </html>`;
+            printWindow.document.write(htmlDoc);
+            printWindow.document.close();
+        }
+
+        function printFullReportPage(reportType, targetDate) {
+            let printWindow = window.open('', '_blank', 'width=900,height=800');
+            let logoImageHtml = shopSettings.logoData ? `<img src="${shopSettings.logoData}" style="max-height:75px; max-width:180px; object-fit:contain; margin-bottom:5px;"><br>` : '';
+
+            let htmlDoc = `
+            <html dir="rtl" lang="ar">
+            <head>
+                <meta charset="UTF-8">
+                <title>تقرير رسمي مفصل</title>
+                <style>
+                    body { font-family: 'Tajawal', sans-serif, Arial; padding: 40px; color: #111; background-color: #fff; line-height: 1.6; }
+                    .report-paper { width: 100%; margin: 0 auto; box-sizing: border-box; }
+                    .header-table { width: 100%; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 25px; }
+                    .header-title { font-size: 24px; font-weight: bold; text-align: center; color: #222; }
+                    .meta-info { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 20px; font-weight: bold; background: #f8f9fa; padding: 10px; border-radius: 8px; }
+                    .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 25px; }
+                    .data-table th { background-color: #24292e; color: #fff; padding: 12px 10px; font-size: 14px; text-align: right; border: 1px solid #333; }
+                    .data-table td { padding: 12px 10px; text-align: right; border: 1px solid #ddd; font-size: 13px; font-weight: bold; }
+                    .summary-box { margin-top: 30px; padding: 20px; border: 2px solid #000; border-radius: 10px; display: inline-block; float: left; min-width: 300px; background: #fdfdfd; }
+                    .summary-line { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+                    .inner-items-list { font-size: 11px; color: #555; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; display: block; margin-top: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="report-paper">
+                    <table class="header-table">
+                        <tr>
+                            <td style="text-align: right; font-size: 13px; font-weight: bold; width: 33%;">
+                                🏬 <b>${shopSettings.name}</b><br>
+                                📞 الهاتف: ${shopSettings.phone}<br>
+                                📍 العنوان: ${shopSettings.address}
+                            </td>
+                            <td class="header-title" style="width: 34%; text-align:center;">
+                                ${logoImageHtml}
+                                تقرير رسمي تفصيلي
+                            </td>
+                            <td style="text-align: left; font-size: 13px; font-weight: bold; width: 33%; vertical-align:top;">
+                                تاريخ الطباعة:<br>${getSystemDate()}
+                            </td>
+                        </tr>
+                    </table>
+            `;
+
+            if (reportType === 'sales') {
+                let list = database.sales.filter(s => s.date === targetDate);
+                let total = list.reduce((sum, i) => sum + i.total, 0);
+                htmlDoc += `
+                    <div class="meta-info"><span>نوع الوثيقة: <b>تقرير كشف حساب مبيعات الكاشير والمحل</b></span><span>التاريخ: <b>${targetDate}</b></span></div>
+                    <table class="data-table">
+                        <thead><tr><th>رقم الوصل</th><th>اسم الزبون</th><th>توقيت الحركة</th><th>تفاصيل البضاعة</th><th>صافي مبلغ الوصل</th></tr></thead>
+                        <tbody>
+                            ${list.length === 0 ? `<tr><td colspan="5" style="text-align:center;">لا توجد حركة مبيعات كاشير في هذا التاريخ</td></tr>` : 
+                              list.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${s.time}</td><td><span class="inner-items-list">${s.items.map(i => `${i.name} (عدد ${i.qty})`).join(' - ')}</span></td><td>${s.total.toLocaleString()} د.ع</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <div class="summary-box"><div class="summary-line" style="color:#0066eb;"><span>إجمالي مبيعات محل:</span><span>${total.toLocaleString()} د.ع</span></div></div>
+                `;
+            }
+            else if (reportType === 'online_sales') {
+                let list = database.online_sales.filter(s => s.date === targetDate);
+                let total = list.reduce((sum, i) => sum + i.total, 0);
+                htmlDoc += `
+                    <div class="meta-info"><span>نوع الوثيقة: <b>تقرير كشف حساب مبيعات الأونلاين والبيج</b></span><span>التاريخ: <b>${targetDate}</b></span></div>
+                    <table class="data-table">
+                        <thead><tr><th>رقم الوصل</th><th>اسم الزبون</th><th>توقيت الحركة</th><th>تفاصيل البضاعة</th><th>صافي مبلغ الوصل</th></tr></thead>
+                        <tbody>
+                            ${list.length === 0 ? `<tr><td colspan="5" style="text-align:center;">لا توجد حركة مبيعات أونلاين في هذا التاريخ</td></tr>` : 
+                              list.map(s => `<tr><td>${s.id}</td><td>${s.customer}</td><td>${s.time}</td><td><span class="inner-items-list">${s.items.map(i => `${i.name} (عدد ${i.qty})`).join(' - ')}</span></td><td>${s.total.toLocaleString()} د.ع</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <div class="summary-box"><div class="summary-line" style="color:#7c3aed;"><span>إجمالي مبيعات الأونلاين:</span><span>${total.toLocaleString()} د.ع</span></div></div>
+                `;
+            }
+            else if (reportType === 'purchases') {
+                let list = database.purchases.filter(p => p.date === targetDate);
+                let total = list.reduce((sum, i) => sum + i.total, 0);
+                htmlDoc += `
+                    <div class="meta-info"><span>نوع الوثيقة: <b>تقرير كشف حساب المشتريات وتوريد القوائم</b></span><span>التاريخ: <b>${targetDate}</b></span></div>
+                    <table class="data-table">
+                        <thead><tr><th>رقم القائمة</th><th>اسم المورد</th><th>توقيت التسجيل</th><th>تفاصيل المواد المستلمة</th><th>إجمالي قيمة القائمة</th></tr></thead>
+                        <tbody>
+                            ${list.length === 0 ? `<tr><td colspan="5" style="text-align:center;">لا توجد قوائم شراء مدخلة في هذا التاريخ المختار</td></tr>` : 
+                              list.map(p => `<tr><td>${p.id}</td><td>${p.supplier}</td><td>${p.time}</td><td><span class="inner-items-list">${p.items.map(i => `${i.name} (عدد ${i.qty})`).join(' - ')}</span></td><td>${p.total.toLocaleString()} د.ع</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <div class="summary-box"><div class="summary-line" style="color:#ff5100;"><span>إجمالي القيمة:</span><span>${total.toLocaleString()} د.ع</span></div></div>
+                `;
+            }
+            else if (reportType === 'items') {
+                let totalQty = database.stock.reduce((sum, i) => sum + i.qty, 0);
+                let totalVal = database.stock.reduce((sum, i) => sum + (i.cost * i.qty), 0);
+                htmlDoc += `
+                    <div class="meta-info"><span>نوع الوثيقة: <b>كشف جرد الرفوف وحركة المواد في المخازن</b></span></div>
+                    <table class="data-table">
+                        <thead><tr><th>باركود المادة</th><th>الاسم التفصيلي للمنتج</th><th>سعر تكلفة الشراء</th><th>الكمية المتوفرة</th><th>القيمة الكلية</th></tr></thead>
+                        <tbody>
+                            ${database.stock.length === 0 ? `<tr><td colspan="5" style="text-align:center;">المخزن فارغ حالياً</td></tr>` : 
+                              database.stock.map(i => `<tr><td>${i.barcode || 'بلا باركود'}</td><td>${i.name}</td><td>${i.cost.toLocaleString()} د.ع</td><td>${i.qty} قطعة</td><td>${(i.cost * i.qty).toLocaleString()} د.ع</td></tr>`).join('')}
+                        </tbody>
+                    </table>
+                    <div class="summary-box">
+                        <div class="summary-line" style="color:#16a34a;"><span>إجمالي قطع البضاعة:</span><span>${totalQty} قطعة</span></div>
+                        <div class="summary-line" style="color:#16a34a; margin-top:5px; border-top:1px dashed #ccc; padding-top:5px;"><span>قيمة رأس المال المخزون:</span><span>${totalVal.toLocaleString()} د.ع</span></div>
+                    </div>
+                `;
+            }
+            else if (reportType === 'profits') {
+                let filteredSales = database.sales.filter(s => s.date === targetDate);
+                let filteredOnline = database.online_sales.filter(s => s.date === targetDate);
+                let totalProfit = filteredSales.reduce((sum, i) => sum + i.profit, 0) + filteredOnline.reduce((sum, i) => sum + i.profit, 0);
+                htmlDoc += `
+                    <div class="meta-info"><span>نوع الوثيقة: <b>كشف صافي الأرباح النقدية المحققة من حركة المبيعات</b></span><span>التاريخ: <b>${targetDate}</b></span></div>
+                    <div class="summary-box" style="float:right; width:100%; margin-bottom:20px;">
+                        <div class="summary-line" style="font-size:1.3rem; color:#2ecc71;"><span>صافي الأرباح الصافية للتاريخ المحدد:</span><span>+ ${totalProfit.toLocaleString()} د.ع</span></div>
+                    </div>
+                `;
+            }
+
+            htmlDoc += `
+                </div>
+                <script>window.onload = function() { window.print(); window.close(); }</s` + `cript>
+            </body>
+            </html>`;
+            
+            printWindow.document.write(htmlDoc);
+            printWindow.document.close();
+        }
+
+        // قيد التشغيل عند الإقلاع
+        window.onload = function() {
+            checkSystemAuthentication(); // 🔑 التحقق الفوري من صلاحيات لوحة الدخول وقفل الحساب الأول
+            updateMainDashboardCards();
+        };
     </script>
 </body>
 </html>
